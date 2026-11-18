@@ -3,9 +3,25 @@ set -e
 
 echo ""
 echo "╔══════════════════════════════════════════╗"
-echo "║          MacHub — Build Script         ║"
+echo "║           MacHub — Build Script          ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""
+
+# ── Cấu hình phát hành (một nguồn duy nhất cho version, repo, khóa Sparkle) ──
+cd "$(dirname "$0")"
+# shellcheck source=config/release.env
+source config/release.env
+APP_VERSION="$(tr -d '[:space:]' < VERSION)"
+SPARKLE_PUBLIC_ED_KEY="$(tr -d '[:space:]' < config/sparkle_public_ed_key)"
+FEED_URL="https://github.com/${GITHUB_REPO}/releases/latest/download/appcast.xml"
+REPO_URL="https://github.com/${GITHUB_REPO}"
+case "$APP_VERSION" in
+    ''|*[!0-9.]*) echo "❌ VERSION không hợp lệ: '$APP_VERSION'"; exit 1 ;;
+esac
+if [[ "$SPARKLE_PUBLIC_ED_KEY" == __* || "$GITHUB_REPO" == __* ]]; then
+    echo "⚠️  Chưa cấu hình GITHUB_REPO hoặc khóa Sparkle → bản build này sẽ TẮT tự cập nhật."
+    echo "   Chạy ./scripts/setup-sparkle-keys.sh và sửa config/release.env."
+fi
 
 # ── Step 0: Terminate existing instances ──
 if [ "$CI" != "true" ] && [ "$1" != "--no-run" ]; then
@@ -73,18 +89,48 @@ mkdir -p "${MACOS}" "${RESOURCES}"
 
 cp "$BINARY" "${MACOS}/"
 
-# Copy Resources (AppIcon.icns, cover.jpg, SMC tools, etc.)
+# Copy Resources (AppIcon.icns, cover.jpg, helper scripts)
 if [ -d "Resources" ]; then
-    echo "🎨 Copying app resources (icons, cover image, SMC tools)..."
+    echo "🎨 Copying app resources (icons, cover image, helper scripts)..."
     cp -R Resources/* "${RESOURCES}/"
-    chmod +x "${RESOURCES}/smc" "${RESOURCES}/machub-power" "${RESOURCES}/install-helper.sh" 2>/dev/null || true
+    chmod +x "${RESOURCES}/machub-power" "${RESOURCES}/install-helper.sh" 2>/dev/null || true
+fi
+
+# smc chạy bằng root qua helper → luôn biên dịch từ mã nguồn trong Vendor/, không dùng binary dựng sẵn.
+echo "🔧 Compiling smc from Vendor/smc-command..."
+SMC_ARCH_ARGS=(-arch arm64)
+if [ "$BUILD_UNIVERSAL" = "true" ]; then
+    SMC_ARCH_ARGS=(-arch arm64 -arch x86_64)
+fi
+clang "${SMC_ARCH_ARGS[@]}" -O2 -Wall -DCMD_TOOL_BUILD -mmacosx-version-min=14.0 \
+    -framework IOKit -o "${RESOURCES}/smc" Vendor/smc-command/smc.c
+chmod 755 "${RESOURCES}/smc"
+echo "   smc sha256: $(shasum -a 256 "${RESOURCES}/smc" | cut -d' ' -f1)"
+
+# Sparkle.framework (cập nhật có chữ ký EdDSA) → Contents/Frameworks
+FRAMEWORKS="${CONTENTS}/Frameworks"
+SPARKLE_FW=""
+for candidate in \
+    ".build/release/Sparkle.framework" \
+    ".build/arm64-apple-macosx/release/Sparkle.framework" \
+    ".build/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework"; do
+    if [ -d "$candidate" ]; then SPARKLE_FW="$candidate"; break; fi
+done
+if [ -z "$SPARKLE_FW" ]; then
+    echo "❌ Không tìm thấy Sparkle.framework (swift build đã resolve package chưa?)"
+    exit 1
+fi
+mkdir -p "${FRAMEWORKS}"
+ditto "$SPARKLE_FW" "${FRAMEWORKS}/Sparkle.framework"
+if ! otool -l "${MACOS}/MacHub" | grep -q "@executable_path/../Frameworks"; then
+    install_name_tool -add_rpath "@executable_path/../Frameworks" "${MACOS}/MacHub"
 fi
 if [ -f "LICENSE" ]; then
     cp "LICENSE" "${RESOURCES}/LICENSE"
 fi
 
 # Info.plist — LSUIElement hides dock icon (menu-bar only)
-cat > "${CONTENTS}/Info.plist" << 'PLIST'
+cat > "${CONTENTS}/Info.plist" << PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -93,7 +139,7 @@ cat > "${CONTENTS}/Info.plist" << 'PLIST'
     <key>CFBundleExecutable</key>
     <string>MacHub</string>
     <key>CFBundleIdentifier</key>
-    <string>com.machub.app</string>
+    <string>${BUNDLE_ID}</string>
     <key>CFBundleName</key>
     <string>MacHub</string>
     <key>CFBundleDisplayName</key>
@@ -101,9 +147,9 @@ cat > "${CONTENTS}/Info.plist" << 'PLIST'
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundleVersion</key>
-    <string>1.9.8</string>
+    <string>${APP_VERSION}</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.9.8</string>
+    <string>${APP_VERSION}</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>
@@ -113,7 +159,17 @@ cat > "${CONTENTS}/Info.plist" << 'PLIST'
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSHumanReadableCopyright</key>
-    <string>Copyright © 2026 Nguyễn Khắc Đại. Licensed under GNU GPLv3.</string>
+    <string>MacHub — dựa trên HyperMac © 2026 Nguyễn Khắc Đại. GNU GPLv3.</string>
+    <key>MHRepositoryURL</key>
+    <string>${REPO_URL}</string>
+    <key>SUFeedURL</key>
+    <string>${FEED_URL}</string>
+    <key>SUPublicEDKey</key>
+    <string>${SPARKLE_PUBLIC_ED_KEY}</string>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
+    <key>SUScheduledCheckInterval</key>
+    <integer>86400</integer>
     <key>NSBluetoothAlwaysUsageDescription</key>
     <string>MacHub sử dụng Bluetooth để tự động ngắt kết nối khi gập nắp máy (Sleep Guard), giúp chống tụt pin và chống nóng máy khi ngủ.</string>
     <key>NSBluetoothPeripheralUsageDescription</key>
@@ -140,15 +196,21 @@ fi
 # sẽ báo 0 identity dù vẫn ký được. codesign chỉ cần identity + private key.
 if security find-identity -p codesigning "${FIND_ARGS[@]}" 2>/dev/null | grep -qF "${SIGN_IDENTITY}"; then
     echo "🔏 Code signing (${SIGN_IDENTITY})..."
-    CODESIGN_ARGS=(--force --deep --sign "${SIGN_IDENTITY}" --identifier "com.machub.app")
+    KC_ARGS=()
     if [[ -n "${SIGN_KEYCHAIN}" ]]; then
-        CODESIGN_ARGS+=(--keychain "${SIGN_KEYCHAIN}")
+        KC_ARGS=(--keychain "${SIGN_KEYCHAIN}")
     fi
-    codesign "${CODESIGN_ARGS[@]}" "${APP_DIR}"
+    # Ký từ trong ra ngoài: Sparkle (giữ identifier riêng của nó) → smc → app.
+    # Không dùng --identifier kèm --deep vì sẽ ghi đè identifier của code lồng bên trong.
+    codesign --force --deep --sign "${SIGN_IDENTITY}" "${KC_ARGS[@]}" "${FRAMEWORKS}/Sparkle.framework"
+    codesign --force --sign "${SIGN_IDENTITY}" "${KC_ARGS[@]}" "${RESOURCES}/smc"
+    codesign --force --sign "${SIGN_IDENTITY}" "${KC_ARGS[@]}" --identifier "${BUNDLE_ID}" "${APP_DIR}"
 else
     echo "🔏 Code signing (ad-hoc — quyền Accessibility sẽ mất sau mỗi lần build)..."
     echo "   → Chạy ./scripts/setup-signing-identity.sh một lần để hết bị."
-    codesign --force --deep --sign - --identifier "com.machub.app" "${APP_DIR}" 2>/dev/null || true
+    codesign --force --deep --sign - "${FRAMEWORKS}/Sparkle.framework" 2>/dev/null || true
+    codesign --force --sign - "${RESOURCES}/smc" 2>/dev/null || true
+    codesign --force --sign - --identifier "${BUNDLE_ID}" "${APP_DIR}" 2>/dev/null || true
 fi
 
 # ── Step 3.1: Create release zip package ──

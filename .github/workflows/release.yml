@@ -7,9 +7,8 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'Tag name (e.g. v1.4.7)'
+        description: 'Tag name (e.g. v0.1.0) — phải khớp file VERSION'
         required: true
-        default: 'v1.4.7'
 
 permissions:
   contents: write
@@ -20,14 +19,15 @@ jobs:
     runs-on: macos-15
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Make Build Script Executable
         run: chmod +x build.sh
 
       # Ký bằng cùng chứng chỉ self-signed với bản local để Designated Requirement
       # (identifier + certificate root) không đổi giữa các phiên bản → TCC giữ quyền.
-      # Nếu chưa cấu hình secret, fallback ad-hoc (quyền Accessibility sẽ mất sau update).
+      # Bản phát hành BẮT BUỘC ký bằng chứng chỉ này: Sparkle từ chối cài bản cập nhật
+      # có chữ ký code khác bản đang chạy, nên ký ad-hoc sẽ làm hỏng chuỗi cập nhật.
       - name: Import Code Signing Certificate
         id: signing
         env:
@@ -44,9 +44,7 @@ jobs:
           }
 
           if [ -z "${SIGNING_P12_BASE64}" ]; then
-            echo "::warning::Chưa có secret MACHUB_SIGNING_P12_BASE64 — build sẽ ký ad-hoc."
-            echo "signed=false" >> "$GITHUB_OUTPUT"
-            exit 0
+            fail "Thiếu secret MACHUB_SIGNING_P12_BASE64 — không phát hành bản ký ad-hoc."
           fi
           if [ -z "${SIGNING_P12_PASSWORD}" ]; then
             fail "Thiếu secret MACHUB_SIGNING_P12_PASSWORD."
@@ -126,6 +124,35 @@ jobs:
               ;;
           esac
 
+      - name: Validate Release Tag
+        id: vars
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag_name }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then TAG="$INPUT_TAG"; else TAG="$REF_NAME"; fi
+          # Không nội suy trực tiếp input vào script (tránh script injection); kiểm tra định dạng.
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?$ ]]; then
+            echo "::error::Tag không hợp lệ: $TAG"; exit 1
+          fi
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          BASE="${TAG#v}"; BASE="${BASE%%-*}"
+          if [ "$BASE" != "$VERSION" ]; then
+            echo "::error::Tag $TAG không khớp file VERSION ($VERSION)"; exit 1
+          fi
+          source config/release.env
+          if [[ "$GITHUB_REPO" != "$GITHUB_REPOSITORY" ]]; then
+            echo "::error::config/release.env GITHUB_REPO=$GITHUB_REPO khác repo đang chạy ($GITHUB_REPOSITORY)"; exit 1
+          fi
+          if grep -q '^__' config/sparkle_public_ed_key; then
+            echo "::error::Chưa có khóa công khai Sparkle trong config/sparkle_public_ed_key"; exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$TAG" == *-* ]]; then echo "prerelease=true" >> "$GITHUB_OUTPUT"; else echo "prerelease=false" >> "$GITHUB_OUTPUT"; fi
+
       - name: Compile and Package MacHub Bundle
         run: ./build.sh --no-run
         env:
@@ -134,33 +161,73 @@ jobs:
           MACHUB_SIGN_KEYCHAIN: ${{ runner.temp }}/machub-signing.keychain-db
 
       - name: Verify Code Signature
-        if: steps.signing.outputs.signed == 'true'
         run: |
+          set -euo pipefail
           codesign --verify --deep --strict build/MacHub.app
           codesign -dv --verbose=4 build/MacHub.app 2>&1 | grep -F "Authority=MacHub Self-Signed"
           codesign -d -r- build/MacHub.app 2>&1 | tail -1
+          echo "### Checksums" >> "$GITHUB_STEP_SUMMARY"
+          shasum -a 256 build/MacHub.zip build/MacHub.app/Contents/Resources/smc | tee -a "$GITHUB_STEP_SUMMARY"
 
-      - name: Determine Release Tag and Notes
-        id: vars
+      # Ký file zip bằng khóa EdDSA riêng của Sparkle và tạo appcast.xml.
+      # sign_update lấy từ artifact SwiftPM của Sparkle (SwiftPM đã kiểm checksum khi tải).
+      - name: Sign Update & Generate Appcast
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.MACHUB_SPARKLE_ED_PRIVATE_KEY }}
+          TAG: ${{ steps.vars.outputs.tag }}
+          VERSION: ${{ steps.vars.outputs.version }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "tag=${{ github.event.inputs.tag_name }}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          set -euo pipefail
+          if [ -z "${SPARKLE_ED_PRIVATE_KEY}" ]; then
+            echo "::error::Thiếu secret MACHUB_SPARKLE_ED_PRIVATE_KEY"; exit 1
           fi
-          python3 -c "import json; data = json.load(open('version.json')); print(data.get('notes', ''))" > release_notes.md 2>/dev/null || true
+          SIGN_UPDATE=".build/artifacts/sparkle/Sparkle/bin/sign_update"
+          [ -x "$SIGN_UPDATE" ] || { echo "::error::Không tìm thấy $SIGN_UPDATE"; exit 1; }
+          umask 077
+          KEY_FILE="$RUNNER_TEMP/sparkle_ed.key"
+          printf '%s' "$SPARKLE_ED_PRIVATE_KEY" > "$KEY_FILE"
+          SIG_ATTRS="$("$SIGN_UPDATE" --ed-key-file "$KEY_FILE" build/MacHub.zip)"
+          rm -f "$KEY_FILE"
+          case "$SIG_ATTRS" in
+            *'sparkle:edSignature="'*'length="'*) ;;
+            *) echo "::error::sign_update trả về kết quả lạ: $SIG_ATTRS"; exit 1 ;;
+          esac
+          REPO_URL="https://github.com/${GITHUB_REPOSITORY}"
+          PUB_DATE="$(LC_ALL=C date -u '+%a, %d %b %Y %H:%M:%S +0000')"
+          cat > build/appcast.xml <<XML
+          <?xml version="1.0" encoding="utf-8"?>
+          <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+            <channel>
+              <title>MacHub</title>
+              <link>${REPO_URL}</link>
+              <item>
+                <title>MacHub ${VERSION}</title>
+                <pubDate>${PUB_DATE}</pubDate>
+                <sparkle:version>${VERSION}</sparkle:version>
+                <sparkle:shortVersionString>${VERSION}</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+                <sparkle:releaseNotesLink>${REPO_URL}/releases/tag/${TAG}</sparkle:releaseNotesLink>
+                <enclosure url="${REPO_URL}/releases/download/${TAG}/MacHub.zip" type="application/octet-stream" ${SIG_ATTRS} />
+              </item>
+            </channel>
+          </rss>
+          XML
+          xmllint --noout build/appcast.xml
+          cat build/appcast.xml
 
-      - name: Create GitHub Release and Upload Asset
-        uses: softprops/action-gh-release@v2
+      # Tag có hậu tố (v0.2.0-rc1) → prerelease: không phải "latest", nên
+      # releases/latest/download/appcast.xml vẫn trỏ về bản chính thức.
+      - name: Create GitHub Release and Upload Assets
+        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
         with:
           tag_name: ${{ steps.vars.outputs.tag }}
           name: MacHub ${{ steps.vars.outputs.tag }}
-          body_path: release_notes.md
-          files: build/MacHub.zip
+          files: |
+            build/MacHub.zip
+            build/MacHub.dmg
+            build/appcast.xml
           draft: false
-          # Tag có hậu tố (v1.6.0-rc1, v1.6.0-test) → release nháp thử nghiệm,
-          # không bị UpdateManager coi là bản chính thức.
-          prerelease: ${{ contains(steps.vars.outputs.tag, '-') }}
+          prerelease: ${{ steps.vars.outputs.prerelease }}
           generate_release_notes: true
 
       - name: Cleanup Signing Keychain

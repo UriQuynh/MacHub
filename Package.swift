@@ -8,6 +8,10 @@ import PackageDescription
 let package = Package(
     name: "MacHub",
     platforms: [.macOS(.v14)],
+    dependencies: [
+        // Cập nhật tự động có chữ ký EdDSA (thay cho UpdateManager tự viết của HyperMac).
+        .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.1"),
+    ],
     targets: [
         .target(
             name: "VirtualDisplayBridge",
@@ -16,7 +20,10 @@ let package = Package(
         ),
         .executableTarget(
             name: "MacHub",
-            dependencies: ["VirtualDisplayBridge"],
+            dependencies: [
+                "VirtualDisplayBridge",
+                .product(name: "Sparkle", package: "Sparkle"),
+            ],
             path: "Sources",
             exclude: ["VirtualDisplayBridge"],
             linkerSettings: [
