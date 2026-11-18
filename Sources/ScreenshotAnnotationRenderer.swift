@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
-// HyperMac — Copyright (C) 2026 Nguyễn Khắc Đại
+// MacHub — fork of HyperMac. Original work Copyright (C) 2026 Nguyễn Khắc Đại.
+// Modifications Copyright (C) 2026 MacHub contributors.
 
 import AppKit
 import SwiftUI

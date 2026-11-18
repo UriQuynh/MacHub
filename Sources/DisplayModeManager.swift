@@ -114,7 +114,7 @@ final class DisplayModeManager: ObservableObject {
     @Published private(set) var previous: [CGDirectDisplayID: DisplayModeOption] = [:]
     @Published private(set) var applyingDisplay: CGDirectDisplayID?
     private let backend: any DisplayModeBackend
-    private let queue = DispatchQueue(label: "com.hypermac.display-modes", qos: .userInitiated)
+    private let queue = DispatchQueue(label: "com.machub.display-modes", qos: .userInitiated)
     private var connectedIDs: Set<CGDirectDisplayID> = []
 
     init(backend: any DisplayModeBackend = CoreGraphicsDisplayModeBackend()) { self.backend = backend }

@@ -26,7 +26,7 @@ public final class MenuBarHiderManager: NSObject, ObservableObject, NSPopoverDel
     public static let shared = MenuBarHiderManager()
     @Published public var isEnabled: Bool {
         didSet {
-            UserDefaults.standard.set(isEnabled, forKey: "HyperMac_MenuBarHider_Enabled")
+            UserDefaults.standard.set(isEnabled, forKey: "MacHub_MenuBarHider_Enabled")
             gIsMenuBarHiderEnabled = isEnabled
             if isEnabled { setupStatusItem() } else { removeStatusItem() }
         }
@@ -43,10 +43,10 @@ public final class MenuBarHiderManager: NSObject, ObservableObject, NSPopoverDel
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private var scanGeneration = 0
-    private let worker = DispatchQueue(label: "com.hypermac.menubar.accessibility", qos: .userInitiated)
+    private let worker = DispatchQueue(label: "com.machub.menubar.accessibility", qos: .userInitiated)
 
     private override init() {
-        isEnabled = UserDefaults.standard.object(forKey: "HyperMac_MenuBarHider_Enabled") as? Bool ?? true
+        isEnabled = UserDefaults.standard.object(forKey: "MacHub_MenuBarHider_Enabled") as? Bool ?? true
         super.init()
         gIsMenuBarHiderEnabled = isEnabled
         if isEnabled { setupStatusItem() }
@@ -76,11 +76,11 @@ public final class MenuBarHiderManager: NSObject, ObservableObject, NSPopoverDel
     public func setupStatusItem() {
         guard statusItem == nil else { return }
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.autosaveName = "HyperMac_MenuBar_Drawer"
+        item.autosaveName = "MacHub_MenuBar_Drawer"
         item.button?.image = NSImage(systemSymbolName: "tray", accessibilityDescription: tr("Mở ngăn kéo Menu Bar", "Open Menu Bar drawer"))
         item.button?.image?.isTemplate = true
         item.button?.toolTip = tr("Ngăn kéo Menu Bar", "Menu Bar drawer") + " · " + ShortcutManager.shared.primaryTitle(.menuBar)
-        NotificationCenter.default.addObserver(self, selector: #selector(refreshShortcutTooltip), name: .hypermacShortcutsChanged, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(refreshShortcutTooltip), name: .machubShortcutsChanged, object: nil)
         item.button?.target = self
         item.button?.action = #selector(toggleAction)
         statusItem = item
@@ -92,7 +92,7 @@ public final class MenuBarHiderManager: NSObject, ObservableObject, NSPopoverDel
     }
 
     public func removeStatusItem() {
-        NotificationCenter.default.removeObserver(self, name: .hypermacShortcutsChanged, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .machubShortcutsChanged, object: nil)
         refreshWork?.cancel()
         popover?.performClose(nil)
         popover = nil
@@ -127,7 +127,7 @@ public final class MenuBarHiderManager: NSObject, ObservableObject, NSPopoverDel
     }
 
     private func ownItem() -> MenuBarDrawerItem {
-        MenuBarDrawerItem(id: "hypermac", name: "HyperMac", appName: "HyperMac",
+        MenuBarDrawerItem(id: "machub", name: "MacHub", appName: "MacHub",
                           icon: NSApp.applicationIconImage, element: nil)
     }
 
@@ -154,9 +154,9 @@ public final class MenuBarHiderManager: NSObject, ObservableObject, NSPopoverDel
                   let name = app.localizedName else { return nil }
             return RunningAppSnapshot(pid: app.processIdentifier, bundleID: bundleID, name: name, icon: app.icon ?? NSImage())
         }
-        let hypermac = ownItem()
+        let machub = ownItem()
         worker.async { [weak self] in
-            var result: [MenuBarDrawerItem] = [hypermac]
+            var result: [MenuBarDrawerItem] = [machub]
             var seenBundles: Set<String> = []
             for snap in apps {
                 let pid = snap.pid
@@ -273,7 +273,7 @@ private struct MenuBarDrawerView: View {
                 Text(tr("Cần quyền Trợ năng để đọc và mở menu ứng dụng.", "Accessibility permission is required to read and open app menus."))
                 Button(tr("Mở cài đặt Trợ năng", "Open Accessibility settings")) { manager.openAccessibilitySettings() }
                 Button(tr("Kiểm tra lại", "Check again")) { manager.refresh() }
-                if let hypermac = manager.items.first { Button("HyperMac") { manager.open(hypermac) } }
+                if let machub = manager.items.first { Button("MacHub") { manager.open(machub) } }
                 Spacer()
             } else if manager.isLoading {
                 ProgressView(tr("Đang đọc Menu Bar…", "Reading menu bar…"))

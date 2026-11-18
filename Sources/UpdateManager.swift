@@ -78,7 +78,7 @@ public class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelega
     @Published public var releaseNotes: String = ""
     @Published public var autoCheckEnabled: Bool = true {
         didSet {
-            UserDefaults.standard.set(autoCheckEnabled, forKey: "hypermac_auto_check_updates")
+            UserDefaults.standard.set(autoCheckEnabled, forKey: "machub_auto_check_updates")
         }
     }
 
@@ -90,8 +90,8 @@ public class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelega
 
     public override init() {
         super.init()
-        if UserDefaults.standard.object(forKey: "hypermac_auto_check_updates") != nil {
-            self.autoCheckEnabled = UserDefaults.standard.bool(forKey: "hypermac_auto_check_updates")
+        if UserDefaults.standard.object(forKey: "machub_auto_check_updates") != nil {
+            self.autoCheckEnabled = UserDefaults.standard.bool(forKey: "machub_auto_check_updates")
         } else {
             self.autoCheckEnabled = true
         }
@@ -148,10 +148,10 @@ public class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelega
             var apiUpToDate: (ver: String, notes: String, dl: URL?, html: URL?)? = nil
 
             // Attempt 1: Standard GitHub Releases API
-            let releaseUrl = URL(string: "https://api.github.com/repos/mrgoose000000-gif/HyperMac/releases/latest")!
+            let releaseUrl = URL(string: "https://api.github.com/repos/mrgoose000000-gif/MacHub/releases/latest")!
             var request = URLRequest(url: releaseUrl)
             request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-            request.setValue("HyperMac-App", forHTTPHeaderField: "User-Agent")
+            request.setValue("MacHub-App", forHTTPHeaderField: "User-Agent")
             request.timeoutInterval = 8.0
 
             do {
@@ -163,14 +163,14 @@ public class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelega
                         let release = try decoder.decode(GitHubRelease.self, from: data)
 
                         let tagVer = release.tagName
-                        let notes = release.body ?? release.name ?? "Bản cập nhật mới dành cho HyperMac."
+                        let notes = release.body ?? release.name ?? "Bản cập nhật mới dành cho MacHub."
                         let releasePage = URL(string: release.htmlUrl)
 
                         // Find zip asset specifically (.zip only, reject .dmg or disk image)
                         let zipAsset = release.assets.first(where: {
                             $0.name.lowercased().hasSuffix(".zip")
                         }) ?? release.assets.first(where: {
-                            $0.name.lowercased().contains("hypermac") && !$0.name.lowercased().hasSuffix(".dmg")
+                            $0.name.lowercased().contains("machub") && !$0.name.lowercased().hasSuffix(".dmg")
                         })
                         let dlUrl = zipAsset.flatMap { URL(string: $0.browserDownloadUrl) }
 
@@ -195,7 +195,7 @@ public class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelega
             }
 
             // Attempt 2: Fast raw manifest fallback (raw.githubusercontent.com - no rate limits)
-            let manifestUrl = URL(string: "https://raw.githubusercontent.com/mrgoose000000-gif/HyperMac/main/version.json")!
+            let manifestUrl = URL(string: "https://raw.githubusercontent.com/mrgoose000000-gif/MacHub/main/version.json")!
             var manifestReq = URLRequest(url: manifestUrl)
             manifestReq.cachePolicy = .reloadIgnoringLocalCacheData
             manifestReq.timeoutInterval = 8.0
@@ -209,8 +209,8 @@ public class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelega
                         let manifest = try decoder.decode(VersionManifest.self, from: mData)
 
                         let dlUrl = manifest.downloadUrl.flatMap { URL(string: $0) }
-                        let pageUrl = manifest.htmlUrl.flatMap { URL(string: $0) } ?? URL(string: "https://github.com/mrgoose000000-gif/HyperMac/releases")
-                        let notes = manifest.notes ?? manifest.name ?? "Bản cập nhật mới dành cho HyperMac."
+                        let pageUrl = manifest.htmlUrl.flatMap { URL(string: $0) } ?? URL(string: "https://github.com/mrgoose000000-gif/MacHub/releases")
+                        let notes = manifest.notes ?? manifest.name ?? "Bản cập nhật mới dành cho MacHub."
 
                         self.handleDiscoveredVersion(
                             latestVer: manifest.version,
@@ -291,7 +291,7 @@ public class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelega
         if Self.updatesDisabled { return }
         guard let url = downloadUrl else {
             // If no direct binary asset attached, open GitHub release page
-            if let html = htmlUrl ?? URL(string: "https://github.com/mrgoose000000-gif/HyperMac/releases") {
+            if let html = htmlUrl ?? URL(string: "https://github.com/mrgoose000000-gif/MacHub/releases") {
                 NSWorkspace.shared.open(html)
             }
             return
@@ -318,7 +318,7 @@ public class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelega
         }
         let session = URLSession(configuration: config, delegate: self, delegateQueue: OperationQueue.main)
         var req = URLRequest(url: targetUrl)
-        req.setValue("HyperMac-App", forHTTPHeaderField: "User-Agent")
+        req.setValue("MacHub-App", forHTTPHeaderField: "User-Agent")
         req.timeoutInterval = 25.0
         let task = session.downloadTask(with: req)
         self.activeDownloadTask = task
@@ -327,7 +327,7 @@ public class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelega
     }
 
     public func openReleasePage() {
-        if let url = htmlUrl ?? URL(string: "https://github.com/mrgoose000000-gif/HyperMac/releases") {
+        if let url = htmlUrl ?? URL(string: "https://github.com/mrgoose000000-gif/MacHub/releases") {
             NSWorkspace.shared.open(url)
         }
     }
@@ -372,7 +372,7 @@ public class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelega
             return
         }
 
-        let tempZip = URL(fileURLWithPath: "/tmp/HyperMac_update.zip")
+        let tempZip = URL(fileURLWithPath: "/tmp/MacHub_update.zip")
         try? FileManager.default.removeItem(at: tempZip)
 
         do {
@@ -381,7 +381,7 @@ public class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelega
             // HTML error page / empty file would be a few KB at most.
             guard size > 100_000 else {
                 Task { @MainActor in
-                    self.state = .failed("Tệp cập nhật tải về không hợp lệ (\(size / 1024) KB). Có thể Release chưa đính kèm HyperMac.zip.")
+                    self.state = .failed("Tệp cập nhật tải về không hợp lệ (\(size / 1024) KB). Có thể Release chưa đính kèm MacHub.zip.")
                 }
                 return
             }
@@ -409,9 +409,9 @@ public class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelega
     // MARK: - Stage & Validate (KHÔNG đụng vào app đang chạy)
 
     /// Giải nén + kiểm tra gói cập nhật TRƯỚC khi thoát app.
-    /// Nếu zip hỏng/không phải HyperMac, app đang chạy vẫn nguyên vẹn.
+    /// Nếu zip hỏng/không phải MacHub, app đang chạy vẫn nguyên vẹn.
     private func stageAndInstall(zipPath: String) {
-        let staging = "/tmp/HyperMac_staging"
+        let staging = "/tmp/MacHub_staging"
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let fm = FileManager.default
@@ -440,13 +440,13 @@ public class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelega
                 return
             }
 
-            let appPath = staging + "/HyperMac.app"
-            let binaryPath = appPath + "/Contents/MacOS/HyperMac"
+            let appPath = staging + "/MacHub.app"
+            let binaryPath = appPath + "/Contents/MacOS/MacHub"
             let bundleID = Bundle(path: appPath)?.bundleIdentifier
 
-            guard fm.fileExists(atPath: binaryPath), bundleID == "com.opensource.hypermac" else {
+            guard fm.fileExists(atPath: binaryPath), bundleID == "com.machub.app" else {
                 DispatchQueue.main.async {
-                    self?.state = .failed("Gói cập nhật không chứa HyperMac.app hợp lệ. App hiện tại không bị ảnh hưởng.")
+                    self?.state = .failed("Gói cập nhật không chứa MacHub.app hợp lệ. App hiện tại không bị ảnh hưởng.")
                 }
                 return
             }
@@ -461,17 +461,17 @@ public class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelega
 
     private func performInPlaceUpdate(stagedAppPath: String, zipPath: String) {
         let currentPid = ProcessInfo.processInfo.processIdentifier
-        let updaterScriptPath = "/tmp/hypermac_in_place_updater.sh"
+        let updaterScriptPath = "/tmp/machub_in_place_updater.sh"
 
-        let appPath = "/Applications/HyperMac.app"
-        let newPath = "/Applications/.HyperMac.new"
-        let backupPath = "/Applications/.HyperMac.bak"
+        let appPath = "/Applications/MacHub.app"
+        let newPath = "/Applications/.MacHub.new"
+        let backupPath = "/Applications/.MacHub.bak"
 
         let script = """
         #!/bin/bash
-        exec > /tmp/hypermac_updater.log 2>&1
+        exec > /tmp/machub_updater.log 2>&1
 
-        echo "🔄 HyperMac Updater started for PID \(currentPid)..."
+        echo "🔄 MacHub Updater started for PID \(currentPid)..."
         PID="\(currentPid)"
         APP="\(appPath)"
         NEW="\(newPath)"
@@ -491,7 +491,7 @@ public class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelega
             open "$APP"
             exit 1
         fi
-        if [ ! -x "$NEW/Contents/MacOS/HyperMac" ]; then
+        if [ ! -x "$NEW/Contents/MacOS/MacHub" ]; then
             echo "❌ Binary không tồn tại, giữ nguyên app cũ."
             rm -rf "$NEW"
             open "$APP"

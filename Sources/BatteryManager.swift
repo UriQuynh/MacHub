@@ -32,7 +32,7 @@ public final class NativePowerUIClient {
 
         typealias InitFn = @convention(c) (AnyObject, Selector, NSString) -> AnyObject
         let initFn = unsafeBitCast(cls.instanceMethod(for: selInit), to: InitFn.self)
-        let client = initFn(uninit, selInit, "HyperMac" as NSString) as? NSObject
+        let client = initFn(uninit, selInit, "MacHub" as NSString) as? NSObject
         self.clientInstance = client
 
         let selSupported = NSSelectorFromString("isMCLSupported")
@@ -387,7 +387,7 @@ public class BatteryManager: ObservableObject {
             if appNapActivityToken == nil {
                 appNapActivityToken = ProcessInfo.processInfo.beginActivity(
                     options: .userInitiatedAllowingIdleSystemSleep,
-                    reason: "HyperMac Active Charging Limiter"
+                    reason: "MacHub Active Charging Limiter"
                 )
             }
         } else if let token = appNapActivityToken {
@@ -826,7 +826,7 @@ public class BatteryManager: ObservableObject {
                         title: tr("Hiệu chuẩn pin: Đã đạt 20%", "Calibration: Reached 20%"),
                         body: isPluggedIn
                             ? tr("Đang sạc liên tục lên 100% để cân bằng điện áp các cell pin.", "Charging continuously to 100% to balance cell voltages.")
-                            : tr("Hãy cắm sạc để HyperMac sạc cân bằng cell lên 100% và tự động khóa lại ở 80%.", "Please plug in charger to allow cell balancing up to 100%.")
+                            : tr("Hãy cắm sạc để MacHub sạc cân bằng cell lên 100% và tự động khóa lại ở 80%.", "Please plug in charger to allow cell balancing up to 100%.")
                     )
                 } else {
                     setChargingInhibited(true)
@@ -1005,7 +1005,7 @@ public class BatteryManager: ObservableObject {
     }
 
     /// Gọi đồng bộ khi thoát ứng dụng (`applicationWillTerminate`) để nhả công tắc cứng `CHTE`/`CH0B`,
-    /// tránh việc Mac bị kẹt ngắt sạc khi HyperMac đã tắt, trong khi vẫn giữ trần `CHLT` nếu đang bật bảo vệ.
+    /// tránh việc Mac bị kẹt ngắt sạc khi MacHub đã tắt, trong khi vẫn giữ trần `CHLT` nếu đang bật bảo vệ.
     public func restoreOnTerminateSync() {
         guard hasBattery else { return }
         let keepCeiling = isProtectionEnabled && !isTopUpActive && (calibrationState == .idle)
@@ -1047,7 +1047,7 @@ public class BatteryManager: ObservableObject {
                 setChargingInhibited(false)
                 sendNotification(
                     title: tr("Bắt đầu hiệu chuẩn pin tự động", "Automatic Battery Calibration Started"),
-                    body: tr("Pin đang ở mức \(currentLevel)%. HyperMac đang sạc lên 100% để cân bằng cell và sẽ tự động khóa lại ở 80%.", "Battery is at \(currentLevel)%. HyperMac is charging to 100% and will lock back to 80%.")
+                    body: tr("Pin đang ở mức \(currentLevel)%. MacHub đang sạc lên 100% để cân bằng cell và sẽ tự động khóa lại ở 80%.", "Battery is at \(currentLevel)%. MacHub is charging to 100% and will lock back to 80%.")
                 )
             } else if calibrationState == .idle {
                 startCalibration(isAutomatic: true)
@@ -1085,8 +1085,8 @@ public class BatteryManager: ObservableObject {
         sendNotification(
             title: tr("🔬 Bắt đầu hiệu chuẩn pin (\(reason))", "🔬 Battery Calibration Started (\(reason))"),
             body: isPluggedIn
-                ? tr("Bước 1: Rút sạc dùng máy tự nhiên xuống mức 20%. Sau đó cắm sạc lại để HyperMac tự động làm phần còn lại.", "Step 1: Unplug and use battery down to 20%. Then plug in charger to complete.")
-                : tr("Bước 1: Tiếp tục dùng pin xuống mức 20%. Sau đó cắm sạc lại để HyperMac tự động làm phần còn lại.", "Step 1: Continue battery use down to 20%. Then plug in charger to complete.")
+                ? tr("Bước 1: Rút sạc dùng máy tự nhiên xuống mức 20%. Sau đó cắm sạc lại để MacHub tự động làm phần còn lại.", "Step 1: Unplug and use battery down to 20%. Then plug in charger to complete.")
+                : tr("Bước 1: Tiếp tục dùng pin xuống mức 20%. Sau đó cắm sạc lại để MacHub tự động làm phần còn lại.", "Step 1: Continue battery use down to 20%. Then plug in charger to complete.")
         )
     }
 
@@ -1158,15 +1158,15 @@ public class BatteryManager: ObservableObject {
         isInstallingHelper = true
 
         DispatchQueue.global(qos: .userInitiated).async {
-            // Chỉ lấy tệp nguồn từ app bundle (hoặc /Applications/HyperMac.app), tuyệt đối không lấy từ thư mục làm việc hiện tại.
+            // Chỉ lấy tệp nguồn từ app bundle (hoặc /Applications/MacHub.app), tuyệt đối không lấy từ thư mục làm việc hiện tại.
             let searchDirs = [
                 Bundle.main.resourcePath,
                 Bundle.main.bundleURL.appendingPathComponent("Contents/Resources").path,
-                "/Applications/HyperMac.app/Contents/Resources"
+                "/Applications/MacHub.app/Contents/Resources"
             ].compactMap { $0 }
 
             var smcSrc: String? = Bundle.main.path(forResource: "smc", ofType: nil)
-            var helperSrc: String? = Bundle.main.path(forResource: "displaycontrol-power", ofType: nil)
+            var helperSrc: String? = Bundle.main.path(forResource: "machub-power", ofType: nil)
             var installScript: String? = Bundle.main.path(forResource: "install-helper", ofType: "sh")
 
             for dir in searchDirs {
@@ -1175,7 +1175,7 @@ public class BatteryManager: ObservableObject {
                     if FileManager.default.fileExists(atPath: path) { smcSrc = path }
                 }
                 if helperSrc == nil {
-                    let path = (dir as NSString).appendingPathComponent("displaycontrol-power")
+                    let path = (dir as NSString).appendingPathComponent("machub-power")
                     if FileManager.default.fileExists(atPath: path) { helperSrc = path }
                 }
                 if installScript == nil {
@@ -1209,11 +1209,11 @@ public class BatteryManager: ObservableObject {
             // Stage bản sao sạch vào thư mục riêng tư (0700) trong /private/tmp để tránh lỗi TCC khi app chạy từ ~/Downloads hoặc ~/Documents
             let fm = FileManager.default
             let stageURL = URL(fileURLWithPath: "/private/tmp", isDirectory: true)
-                .appendingPathComponent("hypermac-helper-\(UUID().uuidString)", isDirectory: true)
+                .appendingPathComponent("machub-helper-\(UUID().uuidString)", isDirectory: true)
             defer { try? fm.removeItem(at: stageURL) }
 
             let stagedSMC = stageURL.appendingPathComponent("smc").path
-            let stagedHelper = stageURL.appendingPathComponent("displaycontrol-power").path
+            let stagedHelper = stageURL.appendingPathComponent("machub-power").path
             let stagedInstall = stageURL.appendingPathComponent("install-helper.sh").path
 
             do {

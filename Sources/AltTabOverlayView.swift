@@ -53,7 +53,7 @@ public struct AltTabOverlayView: View {
                 Image(systemName: "command")
                     .font(.system(size: FS.body, weight: .semibold))
                     .foregroundStyle(.secondary)
-                Text("HYPERMAC")
+                Text("MACHUB")
                     .font(.system(size: FS.label, weight: .semibold, design: .rounded))
                     .foregroundStyle(.primary)
             }

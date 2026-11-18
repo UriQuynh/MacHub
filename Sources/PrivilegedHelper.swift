@@ -4,10 +4,10 @@ import Foundation
 ///
 /// `/Library/PrivilegedHelperTools` luôn thuộc `root:wheel` (755), user thường không thể ghi đè.
 enum PrivilegedHelper {
-    static let powerPath = "/Library/PrivilegedHelperTools/com.opensource.hypermac.power"
-    static let smcPath = "/Library/PrivilegedHelperTools/com.opensource.hypermac.smc"
-    static let sudoersPath = "/etc/sudoers.d/hypermac_power"
-    static let legacyPowerPath = "/usr/local/bin/displaycontrol-power"
+    static let powerPath = "/Library/PrivilegedHelperTools/com.machub.app.power"
+    static let smcPath = "/Library/PrivilegedHelperTools/com.machub.app.smc"
+    static let sudoersPath = "/etc/sudoers.d/machub_power"
+    static let legacyPowerPath = "/usr/local/bin/machub-power"
 
     /// v3: đặt helper trong `/Library/PrivilegedHelperTools`, sudoers giới hạn đúng user cài, kiểm tra tham số đầu vào.
     static let requiredVersion = 3

@@ -55,7 +55,7 @@ public class ScreenshotManager: ObservableObject {
     @Published public private(set) var isPreparingBlur = false
     @Published public private(set) var annotationError: String?
     private var blurGeneration = 0
-    private let blurQueue = DispatchQueue(label: "com.opensource.hypermac.screenshot.blur", qos: .userInitiated)
+    private let blurQueue = DispatchQueue(label: "com.machub.app.screenshot.blur", qos: .userInitiated)
     @Published public var screenNSImage: NSImage? = nil
     @Published public var screenFrame: NSRect = .zero
     @Published public var scaleFactor: CGFloat = 2.0
@@ -202,7 +202,7 @@ public class ScreenshotManager: ObservableObject {
         }
 
         // Fallback: screencapture CLI
-        let tempPath = "/tmp/hypermac_screenshot_\(UUID().uuidString).png"
+        let tempPath = "/tmp/machub_screenshot_\(UUID().uuidString).png"
         let res = shell("screencapture -x -C -R \(Int(cgRect.origin.x)),\(Int(cgRect.origin.y)),\(Int(cgRect.width)),\(Int(cgRect.height)) \"\(tempPath)\"")
         if res.exitCode == 0, let image = NSImage(contentsOfFile: tempPath)?.cgImage(forProposedRect: nil, context: nil, hints: nil) {
             try? FileManager.default.removeItem(atPath: tempPath)

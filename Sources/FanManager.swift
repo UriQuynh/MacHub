@@ -47,7 +47,7 @@ private final class SMCFanReader {
 
 /// Điều khiển tốc độ quạt (Apple Silicon M1–M5 Air/Pro/Max/Ultra) theo kiểu iStat Menus:
 /// System Controlled / Medium / High / thanh trượt thủ công.
-/// Đọc trực tiếp qua IOKit AppleSMC (0 tiến trình con); ghi đồng bộ toàn bộ quạt qua helper `displaycontrol-power`.
+/// Đọc trực tiếp qua IOKit AppleSMC (0 tiến trình con); ghi đồng bộ toàn bộ quạt qua helper `machub-power`.
 @MainActor
 public final class FanManager: ObservableObject {
     public static let shared = FanManager()

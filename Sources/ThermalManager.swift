@@ -301,7 +301,7 @@ private final class SMCTempReader {
 
 /// Reads Apple Silicon HID/PMU temperature sensors and exposes them to the UI.
 ///
-/// NOTE: Fan control was intentionally removed in v1.5.2. HyperMac no longer
+/// NOTE: Fan control was intentionally removed in v1.5.2. MacHub no longer
 /// writes SMC fan keys or installs a privileged helper for fan speed changes.
 @MainActor
 public class ThermalManager: ObservableObject {

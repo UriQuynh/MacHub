@@ -2,7 +2,7 @@
 import AppKit
 import SwiftUI
 
-// Hallmark · component: shortcut settings · genre: modern-minimal · theme: HyperMac native
+// Hallmark · component: shortcut settings · genre: modern-minimal · theme: MacHub native
 // Hallmark · pre-emit critique: P4 H4 E4 S5 R5 V4
 // Native focus/pressed/disabled states; recording, conflict, warning and saved states.
 struct ShortcutSettingsCard: View {
@@ -29,7 +29,7 @@ final class ShortcutSettingsWindow: NSObject, NSWindowDelegate {
         if let window { window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); return }
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 650),
             styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
-        window.title = tr("Phím tắt HyperMac", "HyperMac shortcuts")
+        window.title = tr("Phím tắt MacHub", "MacHub shortcuts")
         window.contentMinSize = NSSize(width: 400, height: 400)
         window.isReleasedWhenClosed = false
         window.delegate = self
@@ -66,8 +66,8 @@ struct ShortcutSettingsView: View {
                     Text(tr("Chuyển cửa sổ: giữ phím bổ trợ, nhấn thêm Shift để chuyển ngược; thả phím bổ trợ để chọn. ⌘C, ⌘Z, Esc và phím thao tác trong trình chỉnh sửa vẫn giữ nguyên.",
                             "Window switching: hold modifiers, add Shift to cycle backward, release modifiers to select. ⌘C, ⌘Z, Esc and editor navigation stay unchanged."))
                         .font(.system(size: FS.caption)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                    Text(tr("HyperMac kiểm tra trùng phím nội bộ và cảnh báo một số phím macOS. Phím do ứng dụng khác đăng ký có thể vẫn trùng.",
-                            "HyperMac checks its own bindings and warns about common macOS shortcuts. Other apps may still use the same keys."))
+                    Text(tr("MacHub kiểm tra trùng phím nội bộ và cảnh báo một số phím macOS. Phím do ứng dụng khác đăng ký có thể vẫn trùng.",
+                            "MacHub checks its own bindings and warns about common macOS shortcuts. Other apps may still use the same keys."))
                         .font(.system(size: FS.caption)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }.padding(.trailing, 4)
             }

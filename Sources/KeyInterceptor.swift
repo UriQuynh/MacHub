@@ -98,7 +98,7 @@ private func eventTapCallback(
     event: CGEvent,
     refcon: UnsafeMutableRawPointer?
 ) -> Unmanaged<CGEvent>? {
-    // 0. Synthetic event bypass: allow HyperMac-synthesized events (e.g. Cmd+C, Opt+Cmd+V) to pass through without interception
+    // 0. Synthetic event bypass: allow MacHub-synthesized events (e.g. Cmd+C, Opt+Cmd+V) to pass through without interception
     if gIsSynthesizingEvent {
         return Unmanaged.passUnretained(event)
     }

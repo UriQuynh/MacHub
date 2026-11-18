@@ -405,7 +405,7 @@ public struct ClipboardOverlayView: View {
                 .font(.system(size: FS.body, weight: .semibold))
                 .foregroundStyle(.secondary)
 
-            Text(tr("Hãy sao chép (⌘C) văn bản, hình ảnh hoặc tệp tin để lưu vào HyperMac.", "Copy (⌘C) text, images or files to save them in HyperMac."))
+            Text(tr("Hãy sao chép (⌘C) văn bản, hình ảnh hoặc tệp tin để lưu vào MacHub.", "Copy (⌘C) text, images or files to save them in MacHub."))
                 .font(.system(size: FS.caption))
                 .foregroundStyle(.secondary.opacity(0.8))
                 .multilineTextAlignment(.center)

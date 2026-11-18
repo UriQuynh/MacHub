@@ -1,6 +1,6 @@
 #!/bin/bash
 # Cài helper khóa sạc / quạt. Chạy bằng root qua "do shell script ... with administrator privileges".
-#   $1 = smc   $2 = displaycontrol-power   $3 = tên user được phép chạy helper
+#   $1 = smc   $2 = machub-power   $3 = tên user được phép chạy helper
 set -euo pipefail
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin
 
@@ -9,9 +9,9 @@ SRC_HELPER="${2:-}"
 TARGET_USER="${3:-}"
 
 DIR=/Library/PrivilegedHelperTools
-POWER="$DIR/com.opensource.hypermac.power"
-SMC="$DIR/com.opensource.hypermac.smc"
-SUDOERS=/etc/sudoers.d/hypermac_power
+POWER="$DIR/com.machub.app.power"
+SMC="$DIR/com.machub.app.smc"
+SUDOERS=/etc/sudoers.d/machub_power
 
 if [ -z "$SRC_SMC" ] || [ -z "$SRC_HELPER" ] || [ -z "$TARGET_USER" ]; then
     echo "Error: Missing arguments"
@@ -45,6 +45,6 @@ install -o root -g wheel -m 440 "$TMP" "$SUDOERS"
 
 # Gỡ helper & sudoers cũ (<= v2 ở /usr/local/bin)
 rm -f /etc/sudoers.d/displaycontrol_power
-rm -f /usr/local/bin/displaycontrol-power /usr/local/bin/displaycontrol-smc
+rm -f /usr/local/bin/machub-power /usr/local/bin/displaycontrol-smc
 
 echo "SUCCESS"

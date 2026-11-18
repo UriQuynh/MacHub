@@ -1,11 +1,11 @@
 import Testing
 import AppKit
 import SwiftUI
-@testable import HyperMac
+@testable import MacHub
 
 extension ScreenshotAnnotationTests {
     @MainActor private func shortcutStore() -> (ShortcutManager, UserDefaults, String) {
-        let name = "HyperMac.ShortcutTests." + UUID().uuidString
+        let name = "MacHub.ShortcutTests." + UUID().uuidString
         let defaults = UserDefaults(suiteName: name)!
         return (ShortcutManager(defaults: defaults, publishRuntime: false), defaults, name)
     }
@@ -117,7 +117,7 @@ extension ScreenshotAnnotationTests {
         #expect(manager.configuration.bindings == saved)
     }
     @Test @MainActor func shortcutSettingsAndRecordingPreview() throws {
-        guard let directory = ProcessInfo.processInfo.environment["HYPERMAC_SHORTCUT_QA_OUT"] else { return }
+        guard let directory = ProcessInfo.processInfo.environment["MACHUB_SHORTCUT_QA_OUT"] else { return }
         let (manager, defaults, name) = shortcutStore()
         defer { ShortcutRecorder.shared.cancel(); defaults.removePersistentDomain(forName: name) }
         func snapshot<V: View>(_ root: V, size: CGSize, name: String) throws {
@@ -132,12 +132,12 @@ extension ScreenshotAnnotationTests {
                 .write(to: URL(fileURLWithPath: directory).appendingPathComponent(name + ".png"))
             window.contentView = nil
         }
-        try snapshot(ShortcutSettingsView(manager: manager), size: CGSize(width: 480, height: 650), name: "hypermac-shortcuts-settings")
+        try snapshot(ShortcutSettingsView(manager: manager), size: CGSize(width: 480, height: 650), name: "machub-shortcuts-settings")
         let recorder = ShortcutRecorder.shared
         recorder.begin(.screenshot, index: 0, manager: manager)
         recorder.receive(8, flags: [.maskCommand, .maskShift])
-        try snapshot(ShortcutRecorderView(recorder: recorder), size: CGSize(width: 400, height: 270), name: "hypermac-shortcuts-conflict")
+        try snapshot(ShortcutRecorderView(recorder: recorder), size: CGSize(width: 400, height: 270), name: "machub-shortcuts-conflict")
         recorder.receive(17, flags: [.maskCommand, .maskControl])
-        try snapshot(ShortcutRecorderView(recorder: recorder), size: CGSize(width: 400, height: 270), name: "hypermac-shortcuts-valid")
+        try snapshot(ShortcutRecorderView(recorder: recorder), size: CGSize(width: 400, height: 270), name: "machub-shortcuts-valid")
     }
 }

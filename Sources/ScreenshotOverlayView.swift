@@ -1,7 +1,7 @@
 import SwiftUI
 import AppKit
 
-// Hallmark · component: screenshot editor · genre: modern-minimal · theme: HyperMac native
+// Hallmark · component: screenshot editor · genre: modern-minimal · theme: MacHub native
 // Hallmark · pre-emit critique: P4 H4 E4 S5 R5 V4
 // Existing FS / Rad / Tone tokens and native input states; no page macrostructure.
 // MARK: - LightShot-Style Screenshot Overlay View

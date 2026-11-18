@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
-// HyperMac — Copyright (C) 2026 Nguyễn Khắc Đại
+// MacHub — fork of HyperMac. Original work Copyright (C) 2026 Nguyễn Khắc Đại.
+// Modifications Copyright (C) 2026 MacHub contributors.
 
 import Testing
 import AppKit
 import SwiftUI
-@testable import HyperMac
+@testable import MacHub
 
 @Suite(.serialized)
 struct ScreenshotAnnotationTests {
@@ -180,7 +181,7 @@ struct ScreenshotAnnotationTests {
                 for x in 20..<870 { shades.insert(data[(y * 900 + x) * 4]) }
             }
             #expect(shades.count > 8) // Source detail remains as tiles, never a uniform cover.
-            let path = "/private/tmp/hypermac-mosaic-reference-check.png"
+            let path = "/private/tmp/machub-mosaic-reference-check.png"
             try #require(NSBitmapImageRep(cgImage: output).representation(using: .png, properties: [:]))
                 .write(to: URL(fileURLWithPath: path))
         }
@@ -295,7 +296,7 @@ struct ScreenshotAnnotationTests {
     }
 
     @Test func testNativePanelTypingUndoAndVietnameseExport() async throws {
-        let out = ProcessInfo.processInfo.environment["HYPERMAC_SCREENSHOT_QA_OUT"] ?? "/private/tmp/hypermac-screenshot-regression.png"
+        let out = ProcessInfo.processInfo.environment["MACHUB_SCREENSHOT_QA_OUT"] ?? "/private/tmp/machub-screenshot-regression.png"
         let ui = try await MainActor.run {
             let m = setup()
             m.currentTool = .text

@@ -23,7 +23,7 @@ public enum AppLanguage: String, CaseIterable, Identifiable {
 public class LanguageManager: ObservableObject {
     public static let shared = LanguageManager()
 
-    private let storageKey = "hypermac_app_language"
+    private let storageKey = "machub_app_language"
 
     @Published public var currentLanguage: AppLanguage {
         didSet {

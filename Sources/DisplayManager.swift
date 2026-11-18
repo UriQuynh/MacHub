@@ -328,7 +328,7 @@ public class DisplayManager: ObservableObject {
         let vendor = CGDisplayVendorNumber(displayID)
         let model  = CGDisplayModelNumber(displayID)
         if (vendor == 0x1234 && model == 0x5678) || (VirtualDisplayManager.shared.isVirtualDisplayActive && displayID == VirtualDisplayManager.shared.virtualDisplayID) {
-            return tr("Màn hình ảo (HyperMac)", "Virtual Display (HyperMac)")
+            return tr("Màn hình ảo (MacHub)", "Virtual Display (MacHub)")
         }
 
         // 1. Native AppKit NSScreen lookup (Most accurate for each specific active display)
@@ -421,7 +421,7 @@ public class DisplayManager: ObservableObject {
     /// Bảng gamma gốc của từng màn (theo profile ColorSync), chụp lần đầu khi chỉnh sáng.
     private var originalGamma: [CGDirectDisplayID: (red: [CGGammaValue], green: [CGGammaValue], blue: [CGGammaValue])] = [:]
 
-    /// Chỉ khôi phục bảng gamma ColorSync khi HyperMac thực sự từng điều chỉnh độ sáng màn ngoài.
+    /// Chỉ khôi phục bảng gamma ColorSync khi MacHub thực sự từng điều chỉnh độ sáng màn ngoài.
     public func restoreHardwareGammaIfNeeded() {
         guard !originalGamma.isEmpty else { return }
         originalGamma.removeAll()

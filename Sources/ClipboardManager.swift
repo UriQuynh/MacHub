@@ -198,19 +198,19 @@ public class ClipboardManager: ObservableObject {
     private var pollTimer: Timer?
     private var quickCheckGeneration: Int = 0
     private var historyResetGeneration: Int = 0
-    private let imageProcessingQueue = DispatchQueue(label: "com.opensource.hypermac.clipboard.image", qos: .utility)
+    private let imageProcessingQueue = DispatchQueue(label: "com.machub.app.clipboard.image", qos: .utility)
     private var previousApp: NSRunningApplication?
     private var hudPanel: NSPanel?
     private let storageURL: URL
     public let imagesDirURL: URL
 
     private init() {
-        // Resolve storage paths: ~/Library/Application Support/HyperMac/
+        // Resolve storage paths: ~/Library/Application Support/MacHub/
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let hypermacDir = appSupport.appendingPathComponent("HyperMac", isDirectory: true)
-        try? FileManager.default.createDirectory(at: hypermacDir, withIntermediateDirectories: true)
-        self.storageURL = hypermacDir.appendingPathComponent("clipboard.json")
-        self.imagesDirURL = hypermacDir.appendingPathComponent("ClipboardImages", isDirectory: true)
+        let machubDir = appSupport.appendingPathComponent("MacHub", isDirectory: true)
+        try? FileManager.default.createDirectory(at: machubDir, withIntermediateDirectories: true)
+        self.storageURL = machubDir.appendingPathComponent("clipboard.json")
+        self.imagesDirURL = machubDir.appendingPathComponent("ClipboardImages", isDirectory: true)
         try? FileManager.default.createDirectory(at: self.imagesDirURL, withIntermediateDirectories: true)
 
         // Load Settings

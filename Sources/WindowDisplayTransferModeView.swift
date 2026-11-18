@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-// Hallmark · component: native radio picker · theme: HyperMac native · genre: modern-minimal
+// Hallmark · component: native radio picker · theme: MacHub native · genre: modern-minimal
 // Hallmark · pre-emit critique: P4 H4 E4 S5 R5 V4
 // Native hover/focus/pressed/disabled states; selection is immediate, with no async loading.
 import SwiftUI

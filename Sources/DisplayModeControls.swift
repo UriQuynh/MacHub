@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-// Hallmark · component: display mode menus · genre: modern-minimal · theme: HyperMac native
+// Hallmark · component: display mode menus · genre: modern-minimal · theme: MacHub native
 // Hallmark · pre-emit critique: P4 H4 E4 S5 R5 V4
 // Native hover/focus/pressed/disabled, inline applying/error states, and reversible success.
 import SwiftUI

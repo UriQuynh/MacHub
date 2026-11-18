@@ -3,14 +3,14 @@ set -e
 
 echo ""
 echo "╔══════════════════════════════════════════╗"
-echo "║          HyperMac — Build Script         ║"
+echo "║          MacHub — Build Script         ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""
 
 # ── Step 0: Terminate existing instances ──
 if [ "$CI" != "true" ] && [ "$1" != "--no-run" ]; then
     echo "🛑 Stopping any running instances..."
-    pkill -9 HyperMac 2>/dev/null || true
+    pkill -9 MacHub 2>/dev/null || true
     pkill -9 DisplayControl 2>/dev/null || true
     sleep 0.5
 fi
@@ -24,33 +24,33 @@ for arg in "$@"; do
 done
 
 if [ "$BUILD_UNIVERSAL" = "true" ]; then
-    echo "🔨 Building HyperMac (Release - Universal 2: arm64 + x86_64)..."
+    echo "🔨 Building MacHub (Release - Universal 2: arm64 + x86_64)..."
     mkdir -p .build/bin_arm64 .build/bin_x86_64 .build/release
     echo "  -> Compiling arm64 (Apple Silicon)..."
     swift build -c release --triple arm64-apple-macosx >/dev/null 2>&1 || swift build -c release
-    if [ -f ".build/out/Products/Release/HyperMac" ]; then
-        cp .build/out/Products/Release/HyperMac .build/bin_arm64/HyperMac
-    elif [ -f ".build/release/HyperMac" ]; then
-        cp .build/release/HyperMac .build/bin_arm64/HyperMac
+    if [ -f ".build/out/Products/Release/MacHub" ]; then
+        cp .build/out/Products/Release/MacHub .build/bin_arm64/MacHub
+    elif [ -f ".build/release/MacHub" ]; then
+        cp .build/release/MacHub .build/bin_arm64/MacHub
     fi
 
     echo "  -> Compiling x86_64 (Intel)..."
     swift build -c release --triple x86_64-apple-macosx >/dev/null 2>&1 || true
-    if [ -f ".build/out/Products/Release/HyperMac" ]; then
-        cp .build/out/Products/Release/HyperMac .build/bin_x86_64/HyperMac
+    if [ -f ".build/out/Products/Release/MacHub" ]; then
+        cp .build/out/Products/Release/MacHub .build/bin_x86_64/MacHub
     fi
 
-    BINARY=".build/release/HyperMac"
-    if [ -f ".build/bin_arm64/HyperMac" ] && [ -f ".build/bin_x86_64/HyperMac" ]; then
+    BINARY=".build/release/MacHub"
+    if [ -f ".build/bin_arm64/MacHub" ] && [ -f ".build/bin_x86_64/MacHub" ]; then
         echo "  -> Merging with lipo (Universal 2)..."
-        lipo -create .build/bin_arm64/HyperMac .build/bin_x86_64/HyperMac -output "$BINARY"
-    elif [ -f ".build/bin_arm64/HyperMac" ]; then
-        cp .build/bin_arm64/HyperMac "$BINARY"
+        lipo -create .build/bin_arm64/MacHub .build/bin_x86_64/MacHub -output "$BINARY"
+    elif [ -f ".build/bin_arm64/MacHub" ]; then
+        cp .build/bin_arm64/MacHub "$BINARY"
     fi
 else
-    echo "⚡ Building HyperMac (Tốc độ cao - Chip M: M1/M2/M3/M4)..."
+    echo "⚡ Building MacHub (Tốc độ cao - Chip M: M1/M2/M3/M4)..."
     swift build -c release
-    BINARY=".build/release/HyperMac"
+    BINARY=".build/release/MacHub"
 fi
 
 if [ ! -f "$BINARY" ]; then
@@ -60,7 +60,7 @@ fi
 echo "✅ Build succeeded: $(file "$BINARY")"
 
 # ── Step 2: Create .app bundle ──
-APP_NAME="HyperMac"
+APP_NAME="MacHub"
 BUILD_DIR="build"
 APP_DIR="${BUILD_DIR}/${APP_NAME}.app"
 CONTENTS="${APP_DIR}/Contents"
@@ -77,7 +77,7 @@ cp "$BINARY" "${MACOS}/"
 if [ -d "Resources" ]; then
     echo "🎨 Copying app resources (icons, cover image, SMC tools)..."
     cp -R Resources/* "${RESOURCES}/"
-    chmod +x "${RESOURCES}/smc" "${RESOURCES}/displaycontrol-power" "${RESOURCES}/install-helper.sh" 2>/dev/null || true
+    chmod +x "${RESOURCES}/smc" "${RESOURCES}/machub-power" "${RESOURCES}/install-helper.sh" 2>/dev/null || true
 fi
 if [ -f "LICENSE" ]; then
     cp "LICENSE" "${RESOURCES}/LICENSE"
@@ -91,13 +91,13 @@ cat > "${CONTENTS}/Info.plist" << 'PLIST'
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>HyperMac</string>
+    <string>MacHub</string>
     <key>CFBundleIdentifier</key>
-    <string>com.opensource.hypermac</string>
+    <string>com.machub.app</string>
     <key>CFBundleName</key>
-    <string>HyperMac</string>
+    <string>MacHub</string>
     <key>CFBundleDisplayName</key>
-    <string>HyperMac</string>
+    <string>MacHub</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundleVersion</key>
@@ -115,13 +115,13 @@ cat > "${CONTENTS}/Info.plist" << 'PLIST'
     <key>NSHumanReadableCopyright</key>
     <string>Copyright © 2026 Nguyễn Khắc Đại. Licensed under GNU GPLv3.</string>
     <key>NSBluetoothAlwaysUsageDescription</key>
-    <string>HyperMac sử dụng Bluetooth để tự động ngắt kết nối khi gập nắp máy (Sleep Guard), giúp chống tụt pin và chống nóng máy khi ngủ.</string>
+    <string>MacHub sử dụng Bluetooth để tự động ngắt kết nối khi gập nắp máy (Sleep Guard), giúp chống tụt pin và chống nóng máy khi ngủ.</string>
     <key>NSBluetoothPeripheralUsageDescription</key>
-    <string>HyperMac quản lý nguồn Bluetooth khi máy Mac vào chế độ ngủ để tiết kiệm pin.</string>
+    <string>MacHub quản lý nguồn Bluetooth khi máy Mac vào chế độ ngủ để tiết kiệm pin.</string>
     <key>NSScreenCaptureUsageDescription</key>
-    <string>HyperMac cần quyền ghi màn hình để hiển thị ảnh xem trước các cửa sổ trong trình chuyển đổi Alt+Tab.</string>
+    <string>MacHub cần quyền ghi màn hình để hiển thị ảnh xem trước các cửa sổ trong trình chuyển đổi Alt+Tab.</string>
     <key>NSAppleEventsUsageDescription</key>
-    <string>HyperMac sử dụng AppleEvents để điều khiển các ứng dụng và màn hình.</string>
+    <string>MacHub sử dụng AppleEvents để điều khiển các ứng dụng và màn hình.</string>
 </dict>
 </plist>
 PLIST
@@ -130,8 +130,8 @@ PLIST
 # Dùng chứng chỉ self-signed cố định nếu có (scripts/setup-signing-identity.sh).
 # Ký ad-hoc tạo cdhash mới mỗi lần build → macOS thu hồi quyền Accessibility
 # sau mỗi lần rebuild. Identity cố định giữ nguyên Designated Requirement.
-SIGN_IDENTITY="${HYPERMAC_SIGN_IDENTITY:-HyperMac Self-Signed}"
-SIGN_KEYCHAIN="${HYPERMAC_SIGN_KEYCHAIN:-}"
+SIGN_IDENTITY="${MACHUB_SIGN_IDENTITY:-MacHub Self-Signed}"
+SIGN_KEYCHAIN="${MACHUB_SIGN_KEYCHAIN:-}"
 FIND_ARGS=()
 if [[ -n "${SIGN_KEYCHAIN}" ]]; then
     FIND_ARGS=("${SIGN_KEYCHAIN}")
@@ -140,7 +140,7 @@ fi
 # sẽ báo 0 identity dù vẫn ký được. codesign chỉ cần identity + private key.
 if security find-identity -p codesigning "${FIND_ARGS[@]}" 2>/dev/null | grep -qF "${SIGN_IDENTITY}"; then
     echo "🔏 Code signing (${SIGN_IDENTITY})..."
-    CODESIGN_ARGS=(--force --deep --sign "${SIGN_IDENTITY}" --identifier "com.opensource.hypermac")
+    CODESIGN_ARGS=(--force --deep --sign "${SIGN_IDENTITY}" --identifier "com.machub.app")
     if [[ -n "${SIGN_KEYCHAIN}" ]]; then
         CODESIGN_ARGS+=(--keychain "${SIGN_KEYCHAIN}")
     fi
@@ -148,55 +148,55 @@ if security find-identity -p codesigning "${FIND_ARGS[@]}" 2>/dev/null | grep -q
 else
     echo "🔏 Code signing (ad-hoc — quyền Accessibility sẽ mất sau mỗi lần build)..."
     echo "   → Chạy ./scripts/setup-signing-identity.sh một lần để hết bị."
-    codesign --force --deep --sign - --identifier "com.opensource.hypermac" "${APP_DIR}" 2>/dev/null || true
+    codesign --force --deep --sign - --identifier "com.machub.app" "${APP_DIR}" 2>/dev/null || true
 fi
 
 # ── Step 3.1: Create release zip package ──
-echo "📦 Packaging ${BUILD_DIR}/HyperMac.zip for distribution..."
-COPYFILE_DISABLE=1 ditto -c -k --norsrc --keepParent "${APP_DIR}" "${BUILD_DIR}/HyperMac.zip"
-echo "✅ Package created: ${BUILD_DIR}/HyperMac.zip"
+echo "📦 Packaging ${BUILD_DIR}/MacHub.zip for distribution..."
+COPYFILE_DISABLE=1 ditto -c -k --norsrc --keepParent "${APP_DIR}" "${BUILD_DIR}/MacHub.zip"
+echo "✅ Package created: ${BUILD_DIR}/MacHub.zip"
 
 # ── Step 3.2: Create release DMG package ──
-echo "📀 Packaging ${BUILD_DIR}/HyperMac.dmg for distribution..."
+echo "📀 Packaging ${BUILD_DIR}/MacHub.dmg for distribution..."
 DMG_TEMP="${BUILD_DIR}/dmg_temp"
-rm -rf "${DMG_TEMP}" "${BUILD_DIR}/HyperMac.dmg"
+rm -rf "${DMG_TEMP}" "${BUILD_DIR}/MacHub.dmg"
 mkdir -p "${DMG_TEMP}"
 cp -R "${APP_DIR}" "${DMG_TEMP}/"
 ln -s /Applications "${DMG_TEMP}/Applications"
-hdiutil create -volname "HyperMac" -srcfolder "${DMG_TEMP}" -ov -format UDZO "${BUILD_DIR}/HyperMac.dmg" >/dev/null 2>&1 || true
+hdiutil create -volname "MacHub" -srcfolder "${DMG_TEMP}" -ov -format UDZO "${BUILD_DIR}/MacHub.dmg" >/dev/null 2>&1 || true
 rm -rf "${DMG_TEMP}"
-if [ -f "${BUILD_DIR}/HyperMac.dmg" ]; then
-    echo "✅ Package created: ${BUILD_DIR}/HyperMac.dmg"
+if [ -f "${BUILD_DIR}/MacHub.dmg" ]; then
+    echo "✅ Package created: ${BUILD_DIR}/MacHub.dmg"
 fi
 
 if [ "$CI" = "true" ] || [ "$1" = "--no-run" ]; then
-    echo "📦 CI build completed. Artifacts are ready at: ${BUILD_DIR}/HyperMac.zip & ${BUILD_DIR}/HyperMac.dmg"
+    echo "📦 CI build completed. Artifacts are ready at: ${BUILD_DIR}/MacHub.zip & ${BUILD_DIR}/MacHub.dmg"
     exit 0
 fi
 
 # ── Step 4: Install to /Applications/ ──
-echo "🚀 Installing to /Applications/HyperMac.app..."
-pkill -9 HyperMac 2>/dev/null || true
+echo "🚀 Installing to /Applications/MacHub.app..."
+pkill -9 MacHub 2>/dev/null || true
 pkill -9 DisplayControl 2>/dev/null || true
 sleep 0.3
-rm -rf /Applications/HyperMac.app
-cp -R "${APP_DIR}" /Applications/HyperMac.app
+rm -rf /Applications/MacHub.app
+cp -R "${APP_DIR}" /Applications/MacHub.app
 rm -rf /Applications/DisplayControl.app 2>/dev/null || true
 
 # ── Step 5: Launch ──
-echo "▶️ Launching /Applications/HyperMac.app..."
-open /Applications/HyperMac.app
+echo "▶️ Launching /Applications/MacHub.app..."
+open /Applications/MacHub.app
 
 sleep 1
-PID=$(pgrep -x HyperMac || true)
+PID=$(pgrep -x MacHub || true)
 if [ -n "$PID" ]; then
-    echo "✅ HyperMac is running with PID: $PID"
+    echo "✅ MacHub is running with PID: $PID"
 else
-    echo "⚠️ HyperMac not detected yet, please check Console."
+    echo "⚠️ MacHub not detected yet, please check Console."
 fi
 
 echo ""
 echo "══════════════════════════════════════════"
-echo "  ✅  HyperMac updated & running!"
+echo "  ✅  MacHub updated & running!"
 echo "══════════════════════════════════════════"
 echo ""
