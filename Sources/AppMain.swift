@@ -84,6 +84,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         _ = SystemMonitorManager.shared
         _ = ScreenshotManager.shared
         _ = MenuBarHiderManager.shared
+        // Khởi động Sparkle ngay khi mở app để lịch kiểm tra cập nhật chạy kể cả khi chưa mở popover.
+        _ = UpdateManager.shared
 
         // Register for display reconfiguration
         CGDisplayRegisterReconfigurationCallback(displayReconfigCallback, nil)
