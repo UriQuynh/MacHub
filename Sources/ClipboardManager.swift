@@ -208,10 +208,11 @@ public class ClipboardManager: ObservableObject {
         // Resolve storage paths: ~/Library/Application Support/MacHub/
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         let machubDir = appSupport.appendingPathComponent("MacHub", isDirectory: true)
-        try? FileManager.default.createDirectory(at: machubDir, withIntermediateDirectories: true)
+        SecureStore.ensurePrivateDirectory(machubDir)
+        // Nội dung được mã hóa AES-GCM (SecureStore); giữ tên file để chuyển đổi dữ liệu cũ.
         self.storageURL = machubDir.appendingPathComponent("clipboard.json")
         self.imagesDirURL = machubDir.appendingPathComponent("ClipboardImages", isDirectory: true)
-        try? FileManager.default.createDirectory(at: self.imagesDirURL, withIntermediateDirectories: true)
+        SecureStore.ensurePrivateDirectory(self.imagesDirURL)
 
         // Load Settings
         if UserDefaults.standard.object(forKey: "clipboard_monitoring_enabled") != nil {
@@ -401,7 +402,11 @@ public class ClipboardManager: ObservableObject {
                     }
 
                     if let origData = originalData {
-                        try? origData.write(to: fileURL, options: .atomic)
+                        do {
+                            try SecureStore.write(origData, to: fileURL)
+                        } catch {
+                            appLog("⚠️ Clipboard: không lưu được ảnh (mã hóa): \(error)")
+                        }
                     }
 
                     // Thumbnail tối đa 800 px (400 pt Retina) qua ImageIO (an toàn ngoài main thread).
@@ -803,7 +808,7 @@ public class ClipboardManager: ObservableObject {
             if let fileName = item.imageFileName {
                 let fileURL = imagesDirURL.appendingPathComponent(fileName)
                 if FileManager.default.fileExists(atPath: fileURL.path),
-                   let data = try? Data(contentsOf: fileURL) {
+                   let data = try? SecureStore.read(from: fileURL) {
                     fullImage = NSImage(data: data)
                     pb.setData(data, forType: .png)
                 }
@@ -864,6 +869,12 @@ public class ClipboardManager: ObservableObject {
         let fallback = imagesDirURL.appendingPathComponent("\(item.id.uuidString).png")
         if FileManager.default.fileExists(atPath: fallback.path) { return fallback }
         return nil
+    }
+
+    /// Dữ liệu ảnh gốc đã giải mã (file ảnh trên đĩa được mã hóa, không đọc trực tiếp bằng URL).
+    public func fullImageData(for item: ClipItem) -> Data? {
+        guard let url = imageURL(for: item) else { return nil }
+        return try? SecureStore.read(from: url)
     }
 
     public func deleteAssociatedImage(for item: ClipItem) {
@@ -967,7 +978,7 @@ public class ClipboardManager: ObservableObject {
         DispatchQueue.global(qos: .utility).async {
             do {
                 let data = try JSONEncoder().encode(itemsToSave)
-                try data.write(to: url, options: .atomic)
+                try SecureStore.write(data, to: url)
             } catch {
                 appLog("Failed to save clipboard items: \(error.localizedDescription)")
             }
@@ -977,18 +988,24 @@ public class ClipboardManager: ObservableObject {
     private func loadItemsFromDisk() {
         guard FileManager.default.fileExists(atPath: storageURL.path) else { return }
         do {
-            let data = try Data(contentsOf: storageURL)
+            // Bản rõ cũ (không có header MHE1) vẫn đọc được; được mã hóa lại ngay bên dưới.
+            let wasPlaintext = !SecureStore.isEncrypted(storageURL)
+            let data = try SecureStore.read(from: storageURL)
             var loaded = try JSONDecoder().decode([ClipItem].self, from: data)
 
             // Migrate legacy image items to disk storage
-            var modified = false
+            var modified = wasPlaintext
             for i in 0..<loaded.count {
                 if loaded[i].type == .image {
                     let fileName = loaded[i].imageFileName ?? "\(loaded[i].id.uuidString).png"
                     let fileURL = self.imagesDirURL.appendingPathComponent(fileName)
 
                     if !FileManager.default.fileExists(atPath: fileURL.path), let imgData = loaded[i].imageData {
-                        try? imgData.write(to: fileURL, options: .atomic)
+                        try? SecureStore.write(imgData, to: fileURL)
+                    } else if FileManager.default.fileExists(atPath: fileURL.path), !SecureStore.isEncrypted(fileURL),
+                              let plain = try? Data(contentsOf: fileURL) {
+                        // Ảnh bản rõ từ phiên bản cũ → mã hóa tại chỗ.
+                        try? SecureStore.write(plain, to: fileURL)
                     }
                     if loaded[i].imageFileName == nil {
                         loaded[i].imageFileName = fileName

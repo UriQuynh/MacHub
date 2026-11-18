@@ -202,10 +202,12 @@ public class ScreenshotManager: ObservableObject {
         }
 
         // Fallback: screencapture CLI
-        let tempPath = "/tmp/machub_screenshot_\(UUID().uuidString).png"
-        let res = shell("screencapture -x -C -R \(Int(cgRect.origin.x)),\(Int(cgRect.origin.y)),\(Int(cgRect.width)),\(Int(cgRect.height)) \"\(tempPath)\"")
+        // Thư mục tạm riêng của user (0700), không dùng /tmp chung: ảnh chụp có thể chứa dữ liệu nhạy cảm.
+        let tempPath = (NSTemporaryDirectory() as NSString)
+            .appendingPathComponent("machub_screenshot_\(UUID().uuidString).png")
+        defer { try? FileManager.default.removeItem(atPath: tempPath) }
+        let res = shell("screencapture -x -C -R \(Int(cgRect.origin.x)),\(Int(cgRect.origin.y)),\(Int(cgRect.width)),\(Int(cgRect.height)) '\(tempPath)'")
         if res.exitCode == 0, let image = NSImage(contentsOfFile: tempPath)?.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-            try? FileManager.default.removeItem(atPath: tempPath)
             return image
         }
 
