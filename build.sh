@@ -27,7 +27,6 @@ fi
 if [ "$CI" != "true" ] && [ "$1" != "--no-run" ]; then
     echo "🛑 Stopping any running instances..."
     pkill -9 MacHub 2>/dev/null || true
-    pkill -9 DisplayControl 2>/dev/null || true
     sleep 0.5
 fi
 
@@ -239,11 +238,9 @@ fi
 # ── Step 4: Install to /Applications/ ──
 echo "🚀 Installing to /Applications/MacHub.app..."
 pkill -9 MacHub 2>/dev/null || true
-pkill -9 DisplayControl 2>/dev/null || true
 sleep 0.3
 rm -rf /Applications/MacHub.app
 cp -R "${APP_DIR}" /Applications/MacHub.app
-rm -rf /Applications/DisplayControl.app 2>/dev/null || true
 
 # ── Step 5: Launch ──
 echo "▶️ Launching /Applications/MacHub.app..."

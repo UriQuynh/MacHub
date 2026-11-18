@@ -43,8 +43,4 @@ echo "$TARGET_USER ALL=(root) NOPASSWD: $POWER" > "$TMP"
 visudo -cf "$TMP" >/dev/null
 install -o root -g wheel -m 440 "$TMP" "$SUDOERS"
 
-# Gỡ helper & sudoers cũ (<= v2 ở /usr/local/bin)
-rm -f /etc/sudoers.d/displaycontrol_power
-rm -f /usr/local/bin/machub-power /usr/local/bin/displaycontrol-smc
-
 echo "SUCCESS"
