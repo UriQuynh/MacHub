@@ -18,19 +18,32 @@ let package = Package(
             path: "Sources/VirtualDisplayBridge",
             publicHeadersPath: "include"
         ),
+        // Lõi theo dõi agent (Claude Code, Codex): chỉ Foundation, dùng chung cho app và hook.
+        .target(
+            name: "AgentKit",
+            path: "Sources/AgentKit"
+        ),
+        // Chương trình nhỏ Claude Code gọi qua hook/statusLine; build.sh nhúng vào MacHub.app.
+        .executableTarget(
+            name: "machub-agent-hook",
+            dependencies: ["AgentKit"],
+            path: "Sources/AgentHook"
+        ),
         .executableTarget(
             name: "MacHub",
             dependencies: [
                 "VirtualDisplayBridge",
+                "AgentKit",
                 .product(name: "Sparkle", package: "Sparkle"),
             ],
             path: "Sources",
-            exclude: ["VirtualDisplayBridge"],
+            exclude: ["VirtualDisplayBridge", "AgentKit", "AgentHook"],
             linkerSettings: [
                 .linkedFramework("IOKit"),
             ]
         ),
         .testTarget(name: "ScreenshotAnnotationTests", dependencies: ["MacHub"], path: "Tests/ScreenshotAnnotationTests"),
-        .testTarget(name: "MacHubTests", dependencies: ["MacHub"], path: "Tests/MacHubTests")
+        .testTarget(name: "MacHubTests", dependencies: ["MacHub"], path: "Tests/MacHubTests"),
+        .testTarget(name: "AgentKitTests", dependencies: ["AgentKit", "machub-agent-hook"], path: "Tests/AgentKitTests")
     ]
 )

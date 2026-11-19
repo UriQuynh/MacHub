@@ -86,6 +86,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         _ = MenuBarHiderManager.shared
         // Khởi động Sparkle ngay khi mở app để lịch kiểm tra cập nhật chạy kể cả khi chưa mở popover.
         _ = UpdateManager.shared
+        // Theo dõi agent (Claude Code, Codex): mở socket cục bộ + quét log; không sửa gì cho tới khi bạn bấm "Cài hook".
+        AgentMonitor.shared.start()
 
         // Register for display reconfiguration
         CGDisplayRegisterReconfigurationCallback(displayReconfigCallback, nil)
@@ -106,6 +108,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         MenuBarHiderManager.shared.removeStatusItem()
         VirtualDisplayManager.shared.destroyVirtualDisplay()
         FanManager.shared.restoreSystemSync()
+        AgentMonitor.shared.stop()
         // Phục hồi đồng bộ công tắc sạc SMC khi thoát app (nhả CHTE/CH0B nhưng giữ trần CHLT nếu đang bật bảo vệ)
         BatteryManager.shared.restoreOnTerminateSync()
         // Chỉ trả bảng gamma màn ngoài về ColorSync nếu MacHub thực sự đã điều chỉnh gamma trước đó
@@ -118,6 +121,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private func showPreviewWindow() {
         let tab = Int(ProcessInfo.processInfo.environment["MACHUB_PREVIEW_TAB"] ?? "") ?? 1
         DisplayManager.shared.selectedMainTab = tab
+        if tab == 4 { AgentMonitor.shared.start() }
 
         if let langStr = ProcessInfo.processInfo.environment["MACHUB_PREVIEW_LANG"] {
             LanguageManager.shared.currentLanguage = (langStr.lowercased() == "en") ? .en : .vi
@@ -228,6 +232,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
     // Điều phối toàn bộ manager nhạy năng lượng theo vòng đời mở/đóng popover.
     func popoverDidShow(_ notification: Notification) {
+        AgentMonitor.shared.setPopoverVisible(true)
         DiskSpeedManager.shared.setPopoverVisible(true)
         BatteryManager.shared.setPopoverVisible(true)
         PermissionsManager.shared.setPopoverVisible(true)
@@ -237,6 +242,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     }
 
     func popoverDidClose(_ notification: Notification) {
+        AgentMonitor.shared.setPopoverVisible(false)
         DiskSpeedManager.shared.setPopoverVisible(false)
         BatteryManager.shared.setPopoverVisible(false)
         PermissionsManager.shared.setPopoverVisible(false)

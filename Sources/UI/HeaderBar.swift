@@ -183,11 +183,12 @@ struct TopTabBar: View {
     @Binding var selectedTab: Int
 
     var body: some View {
-        HStack(spacing: 3) {
+        HStack(spacing: 2) {
             tabButton(index: 0, title: tr("Màn hình", "Displays"), icon: "display")
             tabButton(index: 1, title: tr("Phần cứng", "Hardware"), icon: "bolt.batteryblock")
             tabButton(index: 2, title: tr("Phím tắt", "Shortcuts"), icon: "keyboard")
             tabButton(index: 3, title: tr("Dọn dẹp", "Cleaner"), icon: "sparkles")
+            tabButton(index: 4, title: "Agent", icon: "terminal")
         }
         .padding(3)
         .background(RoundedRectangle(cornerRadius: Rad.sm).fill(Color.primary.opacity(0.05)))
@@ -199,12 +200,13 @@ struct TopTabBar: View {
         Button {
             selectedTab = index
         } label: {
-            HStack(spacing: 3) {
+            HStack(spacing: 2) {
                 Image(systemName: icon)
                     .font(.system(size: FS.caption, weight: .semibold))
                 Text(title)
                     .font(.system(size: FS.caption, weight: selectedTab == index ? .semibold : .medium))
                     .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
             .padding(.vertical, 5)
             .frame(maxWidth: .infinity)

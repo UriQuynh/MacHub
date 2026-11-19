@@ -87,6 +87,15 @@ rm -rf "${BUILD_DIR}"
 mkdir -p "${MACOS}" "${RESOURCES}"
 
 cp "$BINARY" "${MACOS}/"
+# Hook cho Claude Code (cùng thư mục build với binary chính).
+HOOK_BIN="$(dirname "$BINARY")/machub-agent-hook"
+if [ ! -f "$HOOK_BIN" ]; then HOOK_BIN=".build/release/machub-agent-hook"; fi
+if [ -f "$HOOK_BIN" ]; then
+    cp "$HOOK_BIN" "${MACOS}/machub-agent-hook"
+else
+    echo "❌ Không tìm thấy machub-agent-hook"
+    exit 1
+fi
 
 # Copy Resources (AppIcon.icns, cover.jpg, helper scripts)
 if [ -d "Resources" ]; then
@@ -203,12 +212,14 @@ if security find-identity -p codesigning "${FIND_ARGS[@]}" 2>/dev/null | grep -q
     # Không dùng --identifier kèm --deep vì sẽ ghi đè identifier của code lồng bên trong.
     codesign --force --deep --sign "${SIGN_IDENTITY}" "${KC_ARGS[@]}" "${FRAMEWORKS}/Sparkle.framework"
     codesign --force --sign "${SIGN_IDENTITY}" "${KC_ARGS[@]}" "${RESOURCES}/smc"
+    codesign --force --sign "${SIGN_IDENTITY}" "${KC_ARGS[@]}" --identifier "com.machub.app.agent-hook" "${MACOS}/machub-agent-hook"
     codesign --force --sign "${SIGN_IDENTITY}" "${KC_ARGS[@]}" --identifier "${BUNDLE_ID}" "${APP_DIR}"
 else
     echo "🔏 Code signing (ad-hoc — quyền Accessibility sẽ mất sau mỗi lần build)..."
     echo "   → Chạy ./scripts/setup-signing-identity.sh một lần để hết bị."
     codesign --force --deep --sign - "${FRAMEWORKS}/Sparkle.framework" 2>/dev/null || true
     codesign --force --sign - "${RESOURCES}/smc" 2>/dev/null || true
+    codesign --force --sign - --identifier "com.machub.app.agent-hook" "${MACOS}/machub-agent-hook" 2>/dev/null || true
     codesign --force --sign - --identifier "${BUNDLE_ID}" "${APP_DIR}" 2>/dev/null || true
 fi
 

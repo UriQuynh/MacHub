@@ -30,10 +30,21 @@ Sau lần đầu, các bản mới tự đến qua **Sparkle** (có kiểm chữ
 - **Helper root tối thiểu:** khóa sạc/quạt chạy qua `/Library/PrivilegedHelperTools/com.machub.app.power`; rule sudoers chỉ cho đúng user cài và đúng file đó; helper tự kiểm tra mọi tham số.
 - **`smc` build từ mã nguồn** trong `Vendor/smc-command` (smcFanControl, GPLv2+), không dùng binary dựng sẵn.
 - **Clipboard mã hóa trên đĩa** (AES-256-GCM, khóa trong Keychain); bỏ qua nội dung đánh dấu ẩn như mật khẩu.
-- **Không telemetry.** Kết nối mạng duy nhất là kiểm tra bản cập nhật trên GitHub.
+- **Không telemetry.** Kết nối mạng: kiểm tra bản cập nhật trên GitHub, và (chỉ khi bạn bật) đọc hạn mức Claude qua OAuth.
 - Log ở `~/Library/Logs/MacHub/machub.log`.
 
 ---
+
+## 🤖 Theo dõi agent (Claude Code & Codex)
+
+Tab **Agent** trong bảng MacHub:
+- **Phiên**: phiên đang chạy / xong / subagent xong / chờ duyệt, kèm repo, nhánh, model, prompt gần nhất.
+- **Hạn mức**: 5H, 7D (và 7D theo model nếu bật OAuth) của Claude; 5H/7D của Codex, có giờ reset.
+- **Token & Chi phí**: hôm nay / 7 ngày / 30 ngày, theo model và dự án. Chi phí là **ước tính theo giá API**.
+- **Duyệt quyền**: khi Claude Code xin chạy lệnh, một bảng nhỏ hiện góc màn hình với *Cho phép / Luôn cho phép / Từ chối / Hỏi trong terminal*.
+  Không trả lời kịp → Claude Code hỏi trong terminal như bình thường. MacHub không bao giờ tự cho phép.
+
+Cài đặt: tab Agent → ⚙ → **Cài hook** (sửa `~/.claude/settings.json`, có sao lưu, gỡ được). Codex được đọc tự động từ `~/.codex/sessions`.
 
 ## 🎮 BẢNG HƯỚNG DẪN SỬ DỤNG & PHÍM TẮT
 
