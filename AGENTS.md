@@ -271,16 +271,16 @@ khi đó quyền Accessibility sẽ mất sau update.
 **Nên set secret bằng CLI để tránh dán sai** (đã từng dán cả câu lệnh `pbcopy …`):
 
 ```bash
-gh secret set MACHUB_SIGNING_P12_BASE64 --repo <owner>/MacHub \
+gh secret set MACHUB_SIGNING_P12_BASE64 --repo UriQuynh/MacHub \
   < ~/.machub-signing/ci-signing.p12.base64
-gh secret set MACHUB_SIGNING_P12_PASSWORD --repo <owner>/MacHub \
+gh secret set MACHUB_SIGNING_P12_PASSWORD --repo UriQuynh/MacHub \
   --body "hm-test-pass-2026"
 ```
 
 Khi bước import fail, đọc lỗi bằng annotation công khai thay vì log:
 
 ```bash
-gh run view <run-id> --repo <owner>/MacHub \
+gh run view <run-id> --repo UriQuynh/MacHub \
   --json jobs -q '.jobs[0].check_run_url' \
   | xargs -I{} gh api {}/annotations --jq '.[] | "\(.title): \(.message)"'
 ```
@@ -314,7 +314,7 @@ gh run view <run-id> --repo <owner>/MacHub \
 Private key trong secret = ai phát hành được app. Kiểm tra định kỳ bằng `gh`:
 
 ```bash
-R=<owner>/MacHub
+R=UriQuynh/MacHub
 gh api repos/$R --jq '.permissions'                       # quyền của token hiện tại
 gh api "repos/$R/collaborators?affiliation=direct" --jq '.[] | "\(.login) \(.role_name)"'
 gh api "repos/$R/collaborators?affiliation=outside" --jq '.[] | .login'

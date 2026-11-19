@@ -184,7 +184,7 @@ Tích hợp trực tiếp tại tab **Dọn dẹp** trên thanh điều khiển 
 Yêu cầu: macOS 14+, Xcode Command Line Tools (Swift 5.9+, clang).
 
 ```bash
-git clone https://github.com/<owner>/MacHub.git
+git clone https://github.com/UriQuynh/MacHub.git
 cd MacHub
 ./scripts/setup-signing-identity.sh   # một lần: chứng chỉ ký cố định để không mất quyền Trợ năng
 ./build.sh                            # build + cài /Applications + mở app
