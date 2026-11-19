@@ -44,12 +44,15 @@ jobs:
           fi
           exit $STATUS
 
+      # Vẫn build + E2E khi unit test hỏng, để luôn có đủ kết quả (job vẫn đỏ).
       - name: Build app bundle (ad-hoc, no release secrets)
+        if: ${{ !cancelled() }}
         run: ./build.sh --no-run
         env:
           CI: true
 
       - name: E2E smoke test
+        if: ${{ !cancelled() }}
         run: ./scripts/e2e-smoke.sh
 
       - name: Upload E2E artifacts
