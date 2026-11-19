@@ -29,8 +29,10 @@ jobs:
       - name: Build (debug)
         run: swift build
 
+      # Không dùng --parallel: với SwiftPM 6.1, `swift test --parallel` trả exit 0
+      # dù test Swift Testing hỏng (đã gặp: 1 test fail nhưng bước vẫn xanh).
       - name: Unit tests
-        run: swift test --parallel 2>&1 | tee test-output.txt
+        run: swift test 2>&1 | tee test-output.txt
 
       - name: Build app bundle (ad-hoc, no release secrets)
         run: ./build.sh --no-run
