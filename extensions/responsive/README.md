@@ -5,8 +5,9 @@ thay cho việc mở DevTools (F12) rồi đổi từng thiết bị.
 
 ## Cài đặt (Load unpacked)
 
-1. Mở `chrome://extensions`, bật **Developer mode** (góc trên bên phải).
-2. Bấm **Load unpacked**, chọn thư mục `extensions/responsive` trong repo MacHub.
+1. Tải [**MacHub-Responsive-Extension.zip**](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub-Responsive-Extension.zip)
+   và giải nén vào một thư mục cố định (hoặc dùng thư mục `extensions/responsive` khi clone repo).
+2. Mở `chrome://extensions`, bật **Developer mode** (góc trên bên phải), bấm **Load unpacked** và chọn thư mục đó.
 3. Ghim biểu tượng extension lên thanh công cụ (biểu tượng mảnh ghép → ghim *MacHub Responsive*).
 
 Dùng được trên Chrome, Edge, Brave, Arc (Chromium ≥ 116).
