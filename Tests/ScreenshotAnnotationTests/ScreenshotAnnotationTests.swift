@@ -330,7 +330,15 @@ struct ScreenshotAnnotationTests {
                 return parent.subviews.compactMap { findEditor($0) }.first
             }
             let editor = try #require(findEditor(view))
-            #expect(window.firstResponder === editor)
+            if window.isKeyWindow {
+                // Phiên GUI thật (máy cá nhân): editor phải tự nhận focus.
+                #expect(window.firstResponder === editor)
+            } else {
+                // Runner CI không có phiên đăng nhập nên panel không thể thành key window và
+                // AppKit không chuyển focus. Trao focus trực tiếp để vẫn kiểm tra gõ, undo, tiếng Việt.
+                #expect(window.makeFirstResponder(editor))
+                #expect(window.firstResponder === editor)
+            }
             #expect(window.canBecomeKey) // Swift Testing has no NSApplication.run() event loop.
             let typed = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [],
                 timestamp: 0, windowNumber: window.windowNumber, context: nil, characters: "a",
