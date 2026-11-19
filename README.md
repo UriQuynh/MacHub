@@ -32,7 +32,8 @@ Link cố định theo phiên bản (không đổi khi có bản mới). Mẫu c
 
 | Phiên bản | Ngày | macOS | Windows | Extension | Ghi chú |
 |---|---|---|---|---|---|
-| **v0.1.0** (mới nhất) | 2026-11-19 | [.dmg](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub.dmg) · [.zip](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub.zip) | [Setup.exe](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Windows-Setup.exe) · [SHA-256](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Windows-Setup.exe.sha256) | [.zip](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Responsive-Extension.zip) · [SHA-256](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Responsive-Extension.zip.sha256) | [Release v0.1.0](https://github.com/UriQuynh/MacHub/releases/tag/v0.1.0) |
+| **v0.1.1** (mới nhất) | 2026-11-19 | [.dmg](https://github.com/UriQuynh/MacHub/releases/download/v0.1.1/MacHub.dmg) · [.zip](https://github.com/UriQuynh/MacHub/releases/download/v0.1.1/MacHub.zip) | [Setup.exe](https://github.com/UriQuynh/MacHub/releases/download/v0.1.1/MacHub-Windows-Setup.exe) · [SHA-256](https://github.com/UriQuynh/MacHub/releases/download/v0.1.1/MacHub-Windows-Setup.exe.sha256) | [.zip](https://github.com/UriQuynh/MacHub/releases/download/v0.1.1/MacHub-Responsive-Extension.zip) · [SHA-256](https://github.com/UriQuynh/MacHub/releases/download/v0.1.1/MacHub-Responsive-Extension.zip.sha256) | [Release v0.1.1](https://github.com/UriQuynh/MacHub/releases/tag/v0.1.1) |
+| **v0.1.0** | 2026-11-19 | [.dmg](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub.dmg) · [.zip](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub.zip) | [Setup.exe](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Windows-Setup.exe) · [SHA-256](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Windows-Setup.exe.sha256) | [.zip](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Responsive-Extension.zip) · [SHA-256](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Responsive-Extension.zip.sha256) | [Release v0.1.0](https://github.com/UriQuynh/MacHub/releases/tag/v0.1.0) |
 
 Mỗi lần phát hành bản mới, thêm một dòng lên đầu bảng. Link macOS có dạng
 `.../download/v<phiên-bản>/MacHub.dmg` và `.../MacHub.zip`.
@@ -308,6 +309,10 @@ Chi tiết và các lỗi đã gặp: `AGENTS.md` mục 3 và Phụ lục A7.
 ---
 
 ## 📝 Nhật ký thay đổi
+
+### [0.1.1] — 2026-11-19 ([tải về](https://github.com/UriQuynh/MacHub/releases/tag/v0.1.1))
+- Alt-Tab hiện cửa sổ của mọi app ở mọi Space (trước đây chỉ Space hiện tại) và không còn loại nhầm cửa sổ ở dải Stage Manager. Phím `W` chưa đóng được cửa sổ ở Space khác.
+- macOS cần cả quyền **Trợ năng** và **Ghi màn hình**; sau khi cấp Ghi màn hình hãy mở lại MacHub.
 
 ### [0.1.0] — 2026-11-19: tách khỏi HyperMac v1.9.8 ([tải về](https://github.com/UriQuynh/MacHub/releases/tag/v0.1.0))
 Bản này có macOS (Apple Silicon, ký bằng chứng chỉ cố định + Sparkle), Windows và extension.
