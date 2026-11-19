@@ -1,0 +1,183 @@
+/* MacHub Responsive — tông trung tính bạc/xám, nhấn vàng đất. */
+:root {
+  --bg: #f4f4f2;
+  --surface: #ffffff;
+  --surface-2: #ececea;
+  --border: #d9d8d4;
+  --text: #1d1d1f;
+  --muted: #6e6e73;
+  --accent: #a8875a;
+  --accent-text: #ffffff;
+  --shadow: 0 1px 2px rgb(0 0 0 / 6%), 0 8px 24px rgb(0 0 0 / 8%);
+  --radius: 10px;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #161617;
+  --surface: #222224;
+  --surface-2: #2c2c2e;
+  --border: #3a3a3c;
+  --text: #f2f2f2;
+  --muted: #a1a1a6;
+  --accent: #c9a978;
+  --accent-text: #1d1d1f;
+  --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 35%);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Thanh công cụ ── */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 2;
+}
+.brand { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.url { display: flex; gap: 6px; flex: 1 1 320px; min-width: 240px; }
+.url input {
+  flex: 1;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+}
+.url input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.group { display: flex; align-items: center; gap: 8px; }
+.group.right { margin-left: auto; }
+
+.btn {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.btn:hover { background: var(--surface-2); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.05); }
+.btn.icon { width: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.btn.sm { height: 24px; width: 24px; border-radius: 6px; }
+.btn.sm svg { width: 13px; height: 13px; }
+.btn[aria-pressed="true"] { background: var(--surface-2); color: var(--accent); }
+.btn.ghost { border-color: transparent; color: var(--muted); }
+.btn[aria-expanded="true"] { background: var(--surface-2); }
+
+.select { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+.select select {
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  padding: 0 6px;
+}
+.toggle { display: flex; align-items: center; gap: 5px; color: var(--muted); cursor: pointer; user-select: none; }
+.toggle input { accent-color: var(--accent); margin: 0; }
+
+/* ── Bảng thiết bị ── */
+.panel {
+  position: absolute;
+  top: 52px;
+  right: 12px;
+  z-index: 3;
+  width: 340px;
+  max-height: calc(100vh - 70px);
+  overflow: auto;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.panel-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 8px 0 6px; }
+.device-option { display: flex; align-items: center; gap: 8px; padding: 4px 2px; border-radius: 6px; cursor: pointer; }
+.device-option:hover { background: var(--surface-2); }
+.device-option input { accent-color: var(--accent); margin: 0; }
+.device-option .dim { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+.device-option .remove { margin-left: 6px; }
+.custom .row { display: flex; align-items: center; gap: 6px; }
+.custom input {
+  height: 28px; min-width: 0; padding: 0 8px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: inherit;
+}
+.custom #custom-name { flex: 1.4; }
+.custom #custom-w, .custom #custom-h { flex: 1; }
+#reset-devices { margin-top: 10px; width: 100%; }
+
+/* ── Khu vực khung ── */
+.stage { flex: 1; overflow: auto; position: relative; }
+.frames {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  padding: 20px 24px 32px;
+  width: max-content;
+  min-width: 100%;
+}
+.device { flex: none; }
+.device-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  margin-bottom: 6px;
+}
+.device-title { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.device-name, .device-size { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.device-name { font-weight: 600; }
+.device-size { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.device-body {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  outline: 1px solid var(--border);
+}
+.device-body iframe {
+  display: block;
+  border: 0;
+  background: #fff;
+  transform-origin: 0 0;
+}
+.device-hint {
+  position: absolute;
+  inset: auto 8px 8px 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  box-shadow: var(--shadow);
+}
+
+.empty { max-width: 520px; margin: 12vh auto 0; text-align: center; color: var(--muted); }
+.empty h1 { color: var(--text); font-size: 20px; margin: 0 0 8px; }
+kbd {
+  font: 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 1px 5px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface);
+}

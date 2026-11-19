@@ -57,6 +57,7 @@ swift test                    # unit test (Tests/ScreenshotAnnotationTests)
 | `Sources/UpdateManager.swift` | Sparkle |
 | `Sources/Logger.swift`, `ShellHelper.swift` | Log, `shell()` |
 | `Vendor/smc-command/` | Mã nguồn `smc` (GPLv2+) |
+| `extensions/responsive/` | Extension Chrome *MacHub Responsive*: xem trang ở nhiều kích thước cùng lúc (MV3, JS thuần; test: `tests/e2e_test.py`) |
 
 ## 5. Quy ước
 
