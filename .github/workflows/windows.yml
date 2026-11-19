@@ -25,9 +25,9 @@ jobs:
         working-directory: windows
         shell: pwsh
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -65,7 +65,11 @@ jobs:
           Write-Host "Bộ cài: $($setup.Name) ($([math]::Round($setup.Length/1MB,1)) MB)"
           Start-Process $setup.FullName -ArgumentList "/S" -Wait
           $exe = Get-ChildItem "$env:LOCALAPPDATA\MacHub", "$env:LOCALAPPDATA\Programs\MacHub" -Filter MacHub.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $exe) { throw "Không tìm thấy MacHub.exe sau khi cài" }
+          if (-not $exe) {
+            Get-ChildItem "$env:LOCALAPPDATA\MacHub", "$env:LOCALAPPDATA\Programs" -Recurse -Filter *.exe -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
+            throw "Không tìm thấy MacHub.exe sau khi cài"
+          }
+          Write-Host "Đã cài: $($exe.FullName)"
           $hook = Join-Path $exe.DirectoryName "machub-agent-hook.exe"
           if (-not (Test-Path $hook)) { throw "Thiếu machub-agent-hook.exe cạnh MacHub.exe" }
 
@@ -96,7 +100,7 @@ jobs:
           Stop-Process -Id $app.Id -Force
           Write-Host "e2e OK"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: ${{ !cancelled() }}
         with:
           name: machub-windows-setup
