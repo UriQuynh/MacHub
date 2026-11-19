@@ -25,6 +25,50 @@ private let cgCreateImgSym: CGWindowListCreateImageFunc? = {
     return nil
 }()
 
+// CGS (SkyLight) private APIs: list window IDs across ALL Spaces. CGWindowListCopyWindowInfo
+// with .optionOnScreenOnly and AX kAXWindowsAttribute only see the current Space.
+private typealias CGSConnFunc = @convention(c) () -> Int32
+private typealias CGSSpacesFunc = @convention(c) (Int32) -> Unmanaged<CFArray>?
+private typealias CGSWindowsFunc = @convention(c) (
+    Int32, Int32, CFArray, Int32, UnsafeMutablePointer<UInt64>, UnsafeMutablePointer<UInt64>
+) -> Unmanaged<CFArray>?
+
+private struct CGSAPI {
+    let conn: CGSConnFunc
+    let spaces: CGSSpacesFunc
+    let windows: CGSWindowsFunc
+}
+
+private let cgsAPI: CGSAPI? = {
+    let h = dlopen(nil, RTLD_NOW)
+    guard let c = dlsym(h, "CGSMainConnectionID"),
+          let s = dlsym(h, "CGSCopyManagedDisplaySpaces"),
+          let w = dlsym(h, "CGSCopyWindowsWithOptionsAndTags") else { return nil }
+    return CGSAPI(
+        conn: unsafeBitCast(c, to: CGSConnFunc.self),
+        spaces: unsafeBitCast(s, to: CGSSpacesFunc.self),
+        windows: unsafeBitCast(w, to: CGSWindowsFunc.self)
+    )
+}()
+
+/// Window IDs on every Space of every display, or nil if the private API is unavailable.
+private func allSpacesWindowIDs() -> [CGWindowID]? {
+    guard let api = cgsAPI else { return nil }
+    let cid = api.conn()
+    guard let displays = api.spaces(cid)?.takeRetainedValue() as? [[String: Any]] else { return nil }
+    var spaceIDs: [Int] = []
+    for display in displays {
+        for space in (display["Spaces"] as? [[String: Any]] ?? []) {
+            if let id = space["id64"] as? Int { spaceIDs.append(id) }
+        }
+    }
+    guard !spaceIDs.isEmpty else { return nil }
+    var setTags: UInt64 = 0, clearTags: UInt64 = 0
+    guard let ids = api.windows(cid, 0, spaceIDs as CFArray, 2, &setTags, &clearTags)?
+        .takeRetainedValue() as? [Int] else { return nil }
+    return ids.map { CGWindowID($0) }
+}
+
 /// Downsample a CGImage to a compact thumbnail (maxDimension ~320px) to conserve RAM.
 /// Keeps memory usage at ~200KB per preview instead of ~33MB uncompressed raw Retina bitmap!
 private func downsample(cgImg: CGImage, maxDimension: CGFloat = 320) -> NSImage? {
@@ -89,7 +133,8 @@ public struct WindowItem: Identifiable, Equatable {
     public let appName: String
     public let title: String
     public let icon: NSImage
-    public let axElement: AXUIElement
+    /// nil for windows on another Space or in a hidden app: AX cannot see them until we switch to them.
+    public let axElement: AXUIElement?
     public var isMinimized: Bool
     public var windowID: CGWindowID?
     public var thumbnail: NSImage?
@@ -292,7 +337,10 @@ public class WindowManager: ObservableObject {
                 let h = bounds["Height"] as? Double ?? 0
                 let alpha = item[kCGWindowAlpha as String] as? Double ?? 1.0
 
-                if layer == 0 && w >= 150 && h >= 100 && alpha > 0.1 && !seenWIDs.contains(wid) {
+                // Stage Manager reports the side-strip windows at thumbnail size, so a window that AX already
+                // vetted (real size, subrole, title) is kept whatever size CGWindowList claims.
+                let axKnown = axByWID[wid] != nil
+                if layer == 0 && alpha > 0.1 && !seenWIDs.contains(wid) && (axKnown || (w >= 150 && h >= 100)) {
                     // Screen isolation filter: only keep windows located on activeScreen
                     if showOnlyCurrentScreenWindows {
                         let winRect = CGRect(x: x, y: y, width: w, height: h)
@@ -327,12 +375,67 @@ public class WindowManager: ObservableObject {
             }
         }
 
-        // 3. True Screen Z-Order (Frontmost to Backmost)
+        // 3. Windows on other Spaces / in hidden apps (invisible to AX and to .optionOnScreenOnly).
+        // Skipped when the "current screen only" filter is on: their screen is not known.
+        if !showOnlyCurrentScreenWindows {
+            let minimizedWIDs = Set(minimizedItems.compactMap { $0.windowID })
+            items.append(contentsOf: otherSpaceWindows(excluding: seenWIDs.union(minimizedWIDs), myPID: myPID))
+        }
+
+        // 4. True Screen Z-Order (Frontmost to Backmost)
         // CGWindowListCopyWindowInfo naturally maintains the exact real-time Z-order from WindowServer.
         // Append minimized windows at the end
         items.append(contentsOf: minimizedItems)
 
         self.windows = items
+        appLog("🪟 AltTab refresh: total=\(items.count) minimized=\(minimizedItems.count) currentSpace=\(seenWIDs.count)")
+    }
+
+    /// Real, titled windows of regular apps that live on other Spaces or in hidden apps.
+    /// Needs Screen Recording for window titles; untitled windows are dropped as helper/utility surfaces.
+    private func otherSpaceWindows(excluding known: Set<CGWindowID>, myPID: pid_t) -> [WindowItem] {
+        guard let ids = allSpacesWindowIDs(),
+              let all = CGWindowListCopyWindowInfo([.optionAll], kCGNullWindowID) as? [[String: Any]] else { return [] }
+
+        var infoByID: [CGWindowID: [String: Any]] = [:]
+        for info in all {
+            if let n = info[kCGWindowNumber as String] as? CGWindowID { infoByID[n] = info }
+        }
+        var apps: [pid_t: NSRunningApplication] = [:]
+        for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular {
+            apps[app.processIdentifier] = app
+        }
+
+        var result: [WindowItem] = []
+        var skipped: [String: Int] = [:]
+        for wid in ids where !known.contains(wid) {
+            guard let info = infoByID[wid],
+                  let pid = info[kCGWindowOwnerPID as String] as? pid_t,
+                  pid != myPID, let app = apps[pid] else { skipped["not-regular-app", default: 0] += 1; continue }
+            guard (info[kCGWindowLayer as String] as? Int ?? -1) == 0 else { skipped["layer", default: 0] += 1; continue }
+            let bounds = info[kCGWindowBounds as String] as? [String: Any] ?? [:]
+            let w = bounds["Width"] as? Double ?? 0
+            let h = bounds["Height"] as? Double ?? 0
+            let title = (info[kCGWindowName as String] as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            guard w >= 50, h >= 50 else { skipped["small", default: 0] += 1; continue }
+            guard !title.isEmpty else { skipped["no-title(\(app.localizedName ?? "?"))", default: 0] += 1; continue }
+
+            let appName = app.localizedName ?? "App"
+            result.append(WindowItem(
+                id: "\(pid)_\(wid)_\(title)",
+                pid: pid,
+                appName: appName,
+                title: title,
+                icon: app.icon ?? NSImage(systemSymbolName: "app.fill", accessibilityDescription: nil)!,
+                axElement: nil,
+                isMinimized: false,
+                windowID: wid,
+                thumbnail: nil
+            ))
+        }
+        appLog("🪟 AltTab other-Space: cgs=\(ids.count) kept=\(result.count) [\(result.map { $0.appName }.joined(separator: ","))] skipped=\(skipped)")
+        return result
     }
 
     // MARK: - Shortcut Event Handling (Command + Tab or Option + Tab)
@@ -469,8 +572,8 @@ public class WindowManager: ObservableObject {
 
     public func activateWindow(_ item: WindowItem) {
         // 1. Unminimize if minimized
-        if item.isMinimized {
-            AXUIElementSetAttributeValue(item.axElement, kAXMinimizedAttribute as CFString, false as CFTypeRef)
+        if item.isMinimized, let element = item.axElement {
+            AXUIElementSetAttributeValue(element, kAXMinimizedAttribute as CFString, false as CFTypeRef)
         }
 
         // 2. Unhide app if hidden (Cmd+H)
@@ -481,7 +584,16 @@ public class WindowManager: ObservableObject {
         }
 
         // 3. Raise window via Accessibility
-        AXUIElementPerformAction(item.axElement, kAXRaiseAction as CFString)
+        if let element = item.axElement {
+            AXUIElementPerformAction(element, kAXRaiseAction as CFString)
+        } else if let wid = item.windowID {
+            // Window on another Space: activating the app below switches to its Space,
+            // then AX can see the window and raise exactly the one picked.
+            let pid = item.pid
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                WindowManager.raiseWindow(pid: pid, windowID: wid)
+            }
+        }
 
         // 4. Activate owning application WITHOUT activateAllWindows (preserves exact z-order)
         if let app = NSRunningApplication(processIdentifier: item.pid) {
@@ -493,12 +605,30 @@ public class WindowManager: ObservableObject {
         }
     }
 
+    private static func raiseWindow(pid: pid_t, windowID: CGWindowID) {
+        guard let getWid = axGetWindowSym else { return }
+        let app = AXUIElementCreateApplication(pid)
+        var ref: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(app, kAXWindowsAttribute as CFString, &ref) == .success,
+              let wins = ref as? [AXUIElement] else { return }
+        for win in wins {
+            var wid: CGWindowID = 0
+            if getWid(win, &wid) == .success, wid == windowID {
+                AXUIElementSetAttributeValue(win, kAXMinimizedAttribute as CFString, false as CFTypeRef)
+                AXUIElementPerformAction(win, kAXRaiseAction as CFString)
+                return
+            }
+        }
+    }
+
     public func closeSelectedWindow() {
         guard isVisible, selectedIndex >= 0 && selectedIndex < windows.count else { return }
         let item = windows[selectedIndex]
+        // Windows on other Spaces have no AX element, so they cannot be closed from here.
+        guard let element = item.axElement else { return }
 
         var closeBtnRef: CFTypeRef?
-        if AXUIElementCopyAttributeValue(item.axElement, kAXCloseButtonAttribute as CFString, &closeBtnRef) == .success,
+        if AXUIElementCopyAttributeValue(element, kAXCloseButtonAttribute as CFString, &closeBtnRef) == .success,
            let closeBtn = closeBtnRef {
             AXUIElementPerformAction(closeBtn as! AXUIElement, kAXPressAction as CFString)
         }
