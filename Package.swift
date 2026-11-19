@@ -30,6 +30,7 @@ let package = Package(
                 .linkedFramework("IOKit"),
             ]
         ),
-        .testTarget(name: "ScreenshotAnnotationTests", dependencies: ["MacHub"], path: "Tests/ScreenshotAnnotationTests")
+        .testTarget(name: "ScreenshotAnnotationTests", dependencies: ["MacHub"], path: "Tests/ScreenshotAnnotationTests"),
+        .testTarget(name: "MacHubTests", dependencies: ["MacHub"], path: "Tests/MacHubTests")
     ]
 )
