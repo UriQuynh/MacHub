@@ -18,7 +18,7 @@
 
 | Phiên bản | Tải về | Yêu cầu |
 |---|---|---|
-| 🍎 **macOS** | [**MacHub.dmg**](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub.dmg) · [MacHub.zip](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub.zip) <br>⏳ *Chưa có trong v0.1.0: sẽ có sau khi cấu hình chứng chỉ ký + khóa Sparkle (xem [Phát hành](#phát-hành)). Hai link này hoạt động từ bản có macOS đầu tiên.* | macOS 14+, Apple Silicon (M1–M5) |
+| 🍎 **macOS** | [**MacHub.dmg**](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub.dmg) · [MacHub.zip](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub.zip) | macOS 14+, Apple Silicon (M1–M5) |
 | 🪟 **Windows** | [**MacHub-Windows-Setup.exe**](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub-Windows-Setup.exe) | Windows 10/11 x64 (WebView2, có sẵn trên Windows 11) |
 | 🧩 **Extension trình duyệt** (MacHub Responsive) | [**MacHub-Responsive-Extension.zip**](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub-Responsive-Extension.zip) | Chrome, Edge, Brave, Arc (Chromium ≥ 116) |
 
@@ -32,9 +32,9 @@ Link cố định theo phiên bản (không đổi khi có bản mới). Mẫu c
 
 | Phiên bản | Ngày | macOS | Windows | Extension | Ghi chú |
 |---|---|---|---|---|---|
-| **v0.1.0** (mới nhất) | 2026-11-19 | ⏳ chưa có | [Setup.exe](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Windows-Setup.exe) · [SHA-256](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Windows-Setup.exe.sha256) | [.zip](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Responsive-Extension.zip) · [SHA-256](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Responsive-Extension.zip.sha256) | [Release v0.1.0](https://github.com/UriQuynh/MacHub/releases/tag/v0.1.0) |
+| **v0.1.0** (mới nhất) | 2026-11-19 | [.dmg](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub.dmg) · [.zip](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub.zip) | [Setup.exe](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Windows-Setup.exe) · [SHA-256](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Windows-Setup.exe.sha256) | [.zip](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Responsive-Extension.zip) · [SHA-256](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Responsive-Extension.zip.sha256) | [Release v0.1.0](https://github.com/UriQuynh/MacHub/releases/tag/v0.1.0) |
 
-Mỗi lần phát hành bản mới, thêm một dòng lên đầu bảng. Với bản có macOS, link là
+Mỗi lần phát hành bản mới, thêm một dòng lên đầu bảng. Link macOS có dạng
 `.../download/v<phiên-bản>/MacHub.dmg` và `.../MacHub.zip`.
 
 **Kiểm tra toàn vẹn** (so với file `.sha256` cùng bản):
@@ -310,7 +310,7 @@ Chi tiết và các lỗi đã gặp: `AGENTS.md` mục 3 và Phụ lục A7.
 ## 📝 Nhật ký thay đổi
 
 ### [0.1.0] — 2026-11-19: tách khỏi HyperMac v1.9.8 ([tải về](https://github.com/UriQuynh/MacHub/releases/tag/v0.1.0))
-Bản này có Windows và extension; bản macOS (`MacHub.dmg`) sẽ bổ sung sau khi cấu hình chứng chỉ ký + khóa Sparkle.
+Bản này có macOS (Apple Silicon, ký bằng chứng chỉ cố định + Sparkle), Windows và extension.
 
 Những thay đổi so với HyperMac v1.9.8 (commit `c01fdd8`), theo yêu cầu ghi chú chỉnh sửa của GPLv3:
 - Đổi tên thành MacHub (bundle ID `com.machub.app`, đường dẫn helper, chứng chỉ ký).
