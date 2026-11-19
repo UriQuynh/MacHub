@@ -1,0 +1,104 @@
+# Bản Windows (Tauri): test Rust + hook qua named pipe thật, build bộ cài NSIS, cài thử và chạy thử.
+name: Windows
+
+on:
+  push:
+    branches: [main]
+    paths: ["windows/**", ".github/workflows/windows.yml"]
+  pull_request:
+    paths: ["windows/**", ".github/workflows/windows.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: windows
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: windows/package-lock.json
+
+      - name: Rust toolchain
+        run: rustup toolchain install stable --profile minimal --component clippy && rustup default stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: windows
+
+      - name: Cài gói giao diện
+        run: npm ci
+
+      - name: Kiểm tra kiểu + build giao diện
+        run: npm run build
+
+      - name: Build hook (đóng gói cạnh MacHub.exe)
+        run: npm run prepare-hook
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D clippy::correctness -D clippy::suspicious
+
+      - name: Unit test + test hook qua named pipe
+        run: cargo test --workspace -- --test-threads=1
+
+      - name: Build bộ cài NSIS
+        run: npx tauri build --bundles nsis
+
+      - name: Cài thử + chạy thử (e2e)
+        run: |
+          $ErrorActionPreference = "Stop"
+          $setup = Get-ChildItem target/release/bundle/nsis/*.exe | Select-Object -First 1
+          Write-Host "Bộ cài: $($setup.Name) ($([math]::Round($setup.Length/1MB,1)) MB)"
+          Start-Process $setup.FullName -ArgumentList "/S" -Wait
+          $exe = Get-ChildItem "$env:LOCALAPPDATA\MacHub", "$env:LOCALAPPDATA\Programs\MacHub" -Filter MacHub.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) { throw "Không tìm thấy MacHub.exe sau khi cài" }
+          $hook = Join-Path $exe.DirectoryName "machub-agent-hook.exe"
+          if (-not (Test-Path $hook)) { throw "Thiếu machub-agent-hook.exe cạnh MacHub.exe" }
+
+          $env:CLAUDE_CONFIG_DIR = Join-Path $env:RUNNER_TEMP "claude-home"
+          New-Item -ItemType Directory -Force $env:CLAUDE_CONFIG_DIR | Out-Null
+          $app = Start-Process $exe.FullName -PassThru
+          Start-Sleep -Seconds 8
+          if ($app.HasExited) { throw "MacHub thoát ngay sau khi mở (mã $($app.ExitCode))" }
+
+          $user = ($env:USERNAME.ToLower() -replace '[^a-z0-9]', '_')
+          $pipes = [System.IO.Directory]::GetFiles("\\.\pipe\") | Where-Object { $_ -like "*machub-agent-$user" }
+          if (-not $pipes) { throw "Không thấy named pipe machub-agent-$user" }
+          Write-Host "Pipe: $pipes"
+
+          # Hook gửi sự kiện quan sát tới app thật: phải thoát 0, không in gì, không treo.
+          $sw = [Diagnostics.Stopwatch]::StartNew()
+          $out = '{"hook_event_name":"Stop","session_id":"ci-e2e","cwd":"C:\\"}' | & $hook claude
+          if ($LASTEXITCODE -ne 0) { throw "hook trả mã $LASTEXITCODE" }
+          if ($out) { throw "hook in ra stdout: $out" }
+          if ($sw.Elapsed.TotalSeconds -gt 3) { throw "hook chờ quá lâu: $($sw.Elapsed)" }
+
+          # statusLine luôn in ra một dòng.
+          $line = '{"session_id":"ci-e2e","model":{"id":"claude-opus-5-5","display_name":"Opus"}}' | & $hook statusline
+          if (-not $line) { throw "statusline không in gì" }
+          Write-Host "statusline: $line"
+
+          if ($app.HasExited) { throw "MacHub thoát khi nhận sự kiện" }
+          Stop-Process -Id $app.Id -Force
+          Write-Host "e2e OK"
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: machub-windows-setup
+          path: windows/target/release/bundle/nsis/*.exe
+          if-no-files-found: warn

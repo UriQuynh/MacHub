@@ -179,6 +179,12 @@ Tích hợp trực tiếp tại tab **Dọn dẹp** trên thanh điều khiển 
 
 ---
 
+## 🪟 Bản Windows
+
+Thư mục [`windows/`](windows/README.md) chứa MacHub cho Windows 10/11 (Tauri 2: Rust + React): theo dõi agent và hạn mức
+Claude Code / Codex, lịch sử clipboard mã hóa DPAPI, chia cửa sổ + độ sáng màn ngoài (DDC/CI), dọn rác + theo dõi hệ thống.
+Bộ cài NSIS được CI build ở mỗi PR (tab *Actions → Windows → Artifacts*).
+
 ## 🛠️ Tự build từ mã nguồn
 
 Yêu cầu: macOS 14+, Xcode Command Line Tools (Swift 5.9+, clang).
