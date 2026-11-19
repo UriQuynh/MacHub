@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Toolchain
+        run: |
+          sw_vers
+          swift --version
+          xcodebuild -version
+
+      - name: Build (debug)
+        run: swift build
+
+      # SwiftPM 6.1: khi chạy chung XCTest + Swift Testing, `swift test` có thể trả exit 0
+      # dù test Swift Testing hỏng (đã gặp trên runner này). Nên đọc thêm kết quả từ output.
+      - name: Unit tests
+        run: |
+          set +e
+          swift test 2>&1 | tee test-output.txt
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          if grep -qE '✘ Test run with|Executed [0-9]+ tests?, with [1-9][0-9]* failures?' test-output.txt; then
+            echo "::error::Có test hỏng (xem test-output.txt)"
+            grep -E '✘ Test [a-zA-Z_]+\(\) failed|error: -\[' test-output.txt || true
+            exit 1
+          fi
+          exit $STATUS
+
+      # Vẫn build + E2E khi unit test hỏng, để luôn có đủ kết quả (job vẫn đỏ).
+      - name: Build app bundle (ad-hoc, no release secrets)
+        if: ${{ !cancelled() }}
+        run: ./build.sh --no-run
+        env:
+          CI: true
+
+      - name: E2E smoke test
+        if: ${{ !cancelled() }}
+        run: ./scripts/e2e-smoke.sh
+
+      - name: Upload E2E artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-${{ github.run_number }}
+          path: |
+            build/e2e/
+            test-output.txt
+          if-no-files-found: warn

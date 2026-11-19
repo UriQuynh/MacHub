@@ -14,8 +14,9 @@ import Security
 ///   lần ghi kế tiếp sẽ mã hóa lại.
 enum SecureStore {
     private static let magic = Data("MHE1".utf8)
-    private static let service = "com.machub.app.storage-key"
-    private static let account = "clipboard-v1"
+    /// `var` để unit test dùng mục Keychain riêng, không đụng khóa thật của app.
+    static var service = "com.machub.app.storage-key"
+    static var account = "clipboard-v1"
 
     enum StoreError: Error {
         case keyUnavailable(OSStatus)
@@ -64,6 +65,26 @@ enum SecureStore {
     }
 
     // MARK: - Key management
+
+    /// Chỉ dùng trong test: quên khóa cache trong RAM (giữ mục Keychain).
+    static func clearCachedKeyForTesting() {
+        keyLock.lock()
+        defer { keyLock.unlock() }
+        cachedKey = nil
+    }
+
+    /// Chỉ dùng trong test: quên khóa đã cache và xóa mục Keychain hiện tại.
+    static func resetKeyForTesting() {
+        keyLock.lock()
+        defer { keyLock.unlock() }
+        cachedKey = nil
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+        ]
+        SecItemDelete(query as CFDictionary)
+    }
 
     private static let keyLock = NSLock()
     private static var cachedKey: SymmetricKey?  // chỉ truy cập trong keyLock
