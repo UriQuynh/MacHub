@@ -1,0 +1,24 @@
+[package]
+name = "machub-agent-hook"
+description = "Claude Code gọi chương trình này qua hook/statusLine; chuyển sự kiện tới MacHub (Windows)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "machub-agent-hook"
+path = "src/main.rs"
+
+[dependencies]
+machub-core = { path = "../machub-core" }
+serde_json.workspace = true
+chrono.workspace = true
+
+[dev-dependencies]
+tempfile = "3"
+
+[target.'cfg(windows)'.dev-dependencies]
+tokio = { version = "1", features = ["rt", "net", "io-util", "time"] }
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_Security", "Win32_System_Pipes", "Win32_System_Threading"] }

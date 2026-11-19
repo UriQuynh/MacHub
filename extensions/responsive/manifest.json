@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "MacHub Responsive",
+  "short_name": "MH Responsive",
+  "version": "0.1.0",
+  "description": "Xem trang web ở nhiều kích thước mobile, tablet, desktop cùng lúc — không cần mở DevTools (F12).",
+  "minimum_chrome_version": "116",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Xem responsive (Alt+Shift+R)",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": { "default": "Alt+Shift+R" },
+      "description": "Mở trang hiện tại ở chế độ xem responsive"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": ["storage", "declarativeNetRequest", "activeTab"],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*", "file:///*"],
+      "js": ["frame-agent.js"],
+      "all_frames": true,
+      "run_at": "document_start"
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; frame-src http: https: file:"
+  }
+}
