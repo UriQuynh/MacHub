@@ -1,0 +1,126 @@
+# Đính kèm bộ cài Windows và extension trình duyệt vào GitHub Release khi đẩy tag v*.
+# Bản macOS do release.yml phát hành (cần chứng chỉ ký + khóa Sparkle).
+# Tên file cố định để link releases/latest/download/<tên> trong README luôn trỏ bản mới nhất.
+name: Release assets (Windows + extension)
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Tag đã có (vd. v0.1.0) — phải khớp file VERSION"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-assets-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  vars:
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.v.outputs.tag }}
+      prerelease: ${{ steps.v.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: v
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag_name }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then TAG="$INPUT_TAG"; else TAG="$REF_NAME"; fi
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?$ ]]; then
+            echo "::error::Tag không hợp lệ: $TAG"; exit 1
+          fi
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          BASE="${TAG#v}"; BASE="${BASE%%-*}"
+          [ "$BASE" = "$VERSION" ] || { echo "::error::Tag $TAG không khớp VERSION ($VERSION)"; exit 1; }
+          for f in windows/src-tauri/tauri.conf.json extensions/responsive/manifest.json; do
+            V="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['version'])" "$f")"
+            [ "$V" = "$VERSION" ] || { echo "::error::$f có version $V, khác VERSION $VERSION"; exit 1; }
+          done
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          if [[ "$TAG" == *-* ]]; then echo "prerelease=true" >> "$GITHUB_OUTPUT"; else echo "prerelease=false" >> "$GITHUB_OUTPUT"; fi
+
+  windows:
+    needs: vars
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: windows
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.vars.outputs.tag }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: windows/package-lock.json
+      - run: rustup toolchain install stable --profile minimal && rustup default stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: windows
+      - run: npm ci
+      - run: npm run build
+      - run: npm run prepare-hook
+      - run: cargo test --workspace -- --test-threads=1
+      - run: npx tauri build --bundles nsis
+      - name: Đặt tên cố định
+        run: |
+          $setup = Get-ChildItem target/release/bundle/nsis/*.exe | Select-Object -First 1
+          New-Item -ItemType Directory -Force ../dist-release | Out-Null
+          Copy-Item $setup.FullName ../dist-release/MacHub-Windows-Setup.exe
+          (Get-FileHash ../dist-release/MacHub-Windows-Setup.exe -Algorithm SHA256).Hash.ToLower() + "  MacHub-Windows-Setup.exe" |
+            Out-File -Encoding ascii ../dist-release/MacHub-Windows-Setup.exe.sha256
+      - uses: actions/upload-artifact@v5
+        with:
+          name: windows-release
+          path: dist-release/*
+
+  extension:
+    needs: vars
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.vars.outputs.tag }}
+      - name: Đóng gói extension (bỏ thư mục test)
+        working-directory: extensions/responsive
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/dist-release"
+          zip -r -X "$GITHUB_WORKSPACE/dist-release/MacHub-Responsive-Extension.zip" . -x 'tests/*' -x '.gitignore' -x '*/__pycache__/*'
+          cd "$GITHUB_WORKSPACE/dist-release"
+          unzip -l MacHub-Responsive-Extension.zip | grep -q manifest.json
+          sha256sum MacHub-Responsive-Extension.zip > MacHub-Responsive-Extension.zip.sha256
+      - uses: actions/upload-artifact@v5
+        with:
+          name: extension-release
+          path: dist-release/*
+
+  publish:
+    needs: [vars, windows, extension]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          path: dist-release
+          merge-multiple: true
+      - run: ls -la dist-release
+      - name: Tạo / cập nhật GitHub Release
+        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
+        with:
+          tag_name: ${{ needs.vars.outputs.tag }}
+          name: MacHub ${{ needs.vars.outputs.tag }}
+          files: dist-release/*
+          prerelease: ${{ needs.vars.outputs.prerelease }}
+          generate_release_notes: true

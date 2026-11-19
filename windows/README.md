@@ -1,5 +1,8 @@
 # MacHub cho Windows
 
+**Tải về:** [MacHub-Windows-Setup.exe](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub-Windows-Setup.exe)
+(Windows 10/11 x64, cài cho tài khoản hiện tại). Bộ cài chưa ký số: SmartScreen → **More info → Run anyway**.
+
 Bản Windows 10/11 của MacHub, viết bằng **Tauri 2 (Rust + React/TypeScript)**. App nằm ở khay hệ thống;
 bấm icon (hoặc `Ctrl+Alt+M`) để mở bảng điều khiển nổi, mất focus thì tự ẩn như popover trên macOS.
 

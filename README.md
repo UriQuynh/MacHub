@@ -1,7 +1,8 @@
-# MacHub — Bộ tiện ích tất-cả-trong-một cho Mac (Apple Silicon)
+# MacHub — Bộ tiện ích tất-cả-trong-một cho Mac và Windows
 
-[![Platform](https://img.shields.io/badge/platform-macOS%2014.0%2B-black.svg)](#)
-[![Architecture](https://img.shields.io/badge/architecture-Apple%20Silicon%20(arm64)-brightgreen.svg)](#)
+[![Release](https://img.shields.io/github/v/release/UriQuynh/MacHub?include_prereleases&label=b%E1%BA%A3n%20m%E1%BB%9Bi%20nh%E1%BA%A5t)](https://github.com/UriQuynh/MacHub/releases)
+[![CI](https://github.com/UriQuynh/MacHub/actions/workflows/ci.yml/badge.svg)](https://github.com/UriQuynh/MacHub/actions/workflows/ci.yml)
+[![Platform](https://img.shields.io/badge/platform-macOS%2014%2B%20%7C%20Windows%2010%2F11-black.svg)](#-t%E1%BA%A3i-v%E1%BB%81)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
 > **MacHub** là bản fork của [**HyperMac**](https://github.com/mrgoose000000-gif/HyperMac) (© 2026 Nguyễn Khắc Đại, GPLv3).
@@ -13,14 +14,46 @@
 
 ---
 
-## 📥 Cài đặt
+## 📥 Tải về
 
-1. Tải `MacHub.zip` (hoặc `.dmg`) ở trang **Releases** của repo này, giải nén và kéo `MacHub.app` vào **Applications**.
+| Phiên bản | Tải về | Yêu cầu |
+|---|---|---|
+| 🍎 **macOS** | [**MacHub.dmg**](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub.dmg) · [MacHub.zip](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub.zip) | macOS 14+, Apple Silicon (M1–M5) |
+| 🪟 **Windows** | [**MacHub-Windows-Setup.exe**](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub-Windows-Setup.exe) | Windows 10/11 x64 (WebView2, có sẵn trên Windows 11) |
+| 🧩 **Extension trình duyệt** (MacHub Responsive) | [**MacHub-Responsive-Extension.zip**](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub-Responsive-Extension.zip) | Chrome, Edge, Brave, Arc (Chromium ≥ 116) |
+
+Các link trên luôn trỏ tới **bản phát hành mới nhất**. Mọi phiên bản cũ, ghi chú thay đổi và mã SHA-256
+(file `.sha256` đi kèm) nằm ở trang [**Releases**](https://github.com/UriQuynh/MacHub/releases).
+
+### 🍎 macOS
+
+1. Mở `MacHub.dmg`, kéo `MacHub.app` vào **Applications** (hoặc giải nén `MacHub.zip`).
 2. MacHub ký bằng chứng chỉ tự ký (chưa notarize), nên lần đầu macOS sẽ chặn. Mở
    **System Settings → Privacy & Security**, bấm **Open Anyway** ở mục MacHub. Không cần dùng `xattr -cr`.
 3. Mở MacHub, bấm vào thẻ **Cấp quyền phần mềm** ở tab Màn hình để cấp Trợ năng, Ghi màn hình, Bluetooth khi cần.
 
 Sau lần đầu, các bản mới tự đến qua **Sparkle** (có kiểm chữ ký), không cần tải lại.
+
+### 🪟 Windows
+
+1. Chạy `MacHub-Windows-Setup.exe` — cài cho tài khoản hiện tại, không cần quyền Administrator.
+2. Bộ cài chưa ký số nên **SmartScreen** có thể cảnh báo: bấm **More info → Run anyway**.
+   Có thể đối chiếu mã trong `MacHub-Windows-Setup.exe.sha256` bằng `Get-FileHash .\MacHub-Windows-Setup.exe`.
+3. MacHub nằm ở khay hệ thống (góc phải thanh taskbar). Bấm icon hoặc `Ctrl+Alt+M` để mở.
+   Chi tiết tính năng và phím tắt: [`windows/README.md`](windows/README.md).
+
+Bản Windows chưa tự cập nhật: tải lại bộ cài mới và chạy đè lên bản cũ.
+
+### 🧩 Extension MacHub Responsive
+
+Xem một trang web ở kích thước **mobile / tablet / desktop cùng lúc**, thay cho DevTools (F12).
+
+1. Giải nén `MacHub-Responsive-Extension.zip` vào một thư mục cố định (đừng xóa sau khi cài).
+2. Mở `chrome://extensions` (Edge: `edge://extensions`), bật **Developer mode**.
+3. Bấm **Load unpacked**, chọn thư mục vừa giải nén, rồi ghim extension lên thanh công cụ.
+4. Đang ở trang cần xem → bấm icon extension hoặc **Alt+Shift+R**.
+
+Hướng dẫn đầy đủ: [`extensions/responsive/README.md`](extensions/responsive/README.md).
 
 ---
 
@@ -181,9 +214,22 @@ Tích hợp trực tiếp tại tab **Dọn dẹp** trên thanh điều khiển 
 
 ## 🪟 Bản Windows
 
-Thư mục [`windows/`](windows/README.md) chứa MacHub cho Windows 10/11 (Tauri 2: Rust + React): theo dõi agent và hạn mức
-Claude Code / Codex, lịch sử clipboard mã hóa DPAPI, chia cửa sổ + độ sáng màn ngoài (DDC/CI), dọn rác + theo dõi hệ thống.
-Bộ cài NSIS được CI build ở mỗi PR (tab *Actions → Windows → Artifacts*).
+Thư mục [`windows/`](windows/README.md) chứa MacHub cho Windows 10/11 (Tauri 2: Rust + React), gồm 4 tab:
+
+| Tab | Tính năng |
+|---|---|
+| **Agent** | Phiên Claude Code / Codex, hạn mức 5 giờ & 7 ngày, token & chi phí, duyệt quyền công cụ từ cửa sổ nổi |
+| **Clipboard** | Lịch sử văn bản mã hóa DPAPI, tìm, ghim, `Ctrl+Shift+V` dán nhanh |
+| **Cửa sổ & Màn hình** | Chia cửa sổ `Ctrl+Alt+←/→/↑/↓…`, độ sáng màn hình ngoài qua DDC/CI |
+| **Dọn dẹp & Hệ thống** | CPU, RAM, ổ đĩa, mạng, tiến trình; dọn file tạm và cache an toàn |
+
+Tải bộ cài: [MacHub-Windows-Setup.exe](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub-Windows-Setup.exe).
+
+## 🧩 Extension MacHub Responsive
+
+Extension Chrome/Edge trong [`extensions/responsive/`](extensions/responsive/README.md): mở một trang ở nhiều khung thiết bị
+cùng lúc (iPhone, Pixel, iPad, laptop, desktop, kích thước tự chọn), đồng bộ cuộn và điều hướng, xoay khung, chụp ảnh toàn bộ.
+Tải về: [MacHub-Responsive-Extension.zip](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub-Responsive-Extension.zip).
 
 ## 🛠️ Tự build từ mã nguồn
 
@@ -199,6 +245,15 @@ cd MacHub
 
 Bản tự build chưa có khóa Sparkle sẽ tắt tự cập nhật. Người phát hành xem `AGENTS.md` mục 3.
 
+Bản Windows và extension: xem [`windows/README.md`](windows/README.md) và [`extensions/responsive/README.md`](extensions/responsive/README.md).
+
+### Phát hành
+
+Sửa `VERSION` (và version trong `windows/src-tauri/tauri.conf.json`, `windows/package.json`,
+`extensions/responsive/manifest.json` cho khớp), merge vào `main`, rồi đẩy tag `v<VERSION>`. CI tự tạo Release:
+- `release.yml` → `MacHub.dmg`, `MacHub.zip`, `appcast.xml` (cần chứng chỉ ký + khóa Sparkle, xem `AGENTS.md` mục 3);
+- `release-assets.yml` → `MacHub-Windows-Setup.exe`, `MacHub-Responsive-Extension.zip` kèm `.sha256`.
+
 ---
 
 ## 📝 Nhật ký thay đổi
@@ -212,6 +267,11 @@ Những thay đổi so với HyperMac v1.9.8 (commit `c01fdd8`), theo yêu cầu
 - Mã hóa lịch sử & ảnh clipboard; log chuyển khỏi `/tmp`.
 - Tách `Views.swift` thành các file trong `Sources/UI/`.
 - CI: bắt buộc ký bằng chứng chỉ cố định, kiểm tra tag khớp `VERSION`, pin action theo commit.
+- **Theo dõi agent** (tab Agent trong popover): phiên Claude Code qua hook, Codex qua log, hạn mức 5 giờ/7 ngày,
+  token & chi phí, duyệt quyền công cụ (không bao giờ tự cho phép).
+- **Bản Windows** (Tauri 2): agent, clipboard DPAPI, chia cửa sổ + DDC/CI, dọn rác + theo dõi hệ thống.
+- **Extension MacHub Responsive** cho Chrome/Edge.
+- CI: unit test + E2E trên macOS, Windows và extension; bắt buộc check `test` trước khi merge vào `main`.
 
 Lịch sử phiên bản trước đó: xem [HyperMac](https://github.com/mrgoose000000-gif/HyperMac) và `git log`.
 
