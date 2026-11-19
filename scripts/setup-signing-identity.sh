@@ -60,7 +60,13 @@ openssl req -x509 -newkey rsa:2048 -nodes \
     -days 3650 \
     -config "${WORK_DIR}/codesign.cnf" >/dev/null 2>&1
 
-openssl pkcs12 -export -legacy \
+# OpenSSL 3 cần -legacy; LibreSSL (openssl mặc định của macOS) không có cờ này và đã xuất p12 kiểu cũ.
+LEGACY_ARGS=()
+if openssl pkcs12 -help 2>&1 | grep -q -- "-legacy"; then
+    LEGACY_ARGS=(-legacy)
+fi
+
+openssl pkcs12 -export "${LEGACY_ARGS[@]+"${LEGACY_ARGS[@]}"}" \
     -inkey "${WORK_DIR}/key.pem" \
     -in "${WORK_DIR}/cert.pem" \
     -name "${IDENTITY_NAME}" \
