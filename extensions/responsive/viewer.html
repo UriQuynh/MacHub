@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MacHub Responsive</title>
+  <link rel="icon" href="icons/icon32.png" />
+  <link rel="stylesheet" href="viewer.css" />
+</head>
+<body>
+  <header class="bar">
+    <div class="brand">
+      <img src="icons/icon32.png" alt="" width="20" height="20" />
+      <span>Responsive</span>
+    </div>
+
+    <form id="url-form" class="url" autocomplete="off">
+      <input id="url-input" type="text" placeholder="Nhập URL, vd. localhost:3000" spellcheck="false" aria-label="URL" />
+      <button type="submit" class="btn primary">Mở</button>
+    </form>
+
+    <div class="group">
+      <button id="reload-all" class="btn icon" title="Tải lại tất cả (R)" aria-label="Tải lại tất cả"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M13.5 2.5v3h-3"/></svg></button>
+      <label class="select" title="Thu phóng">
+        <span>Thu phóng</span>
+        <select id="zoom">
+          <option value="fit">Vừa màn hình</option>
+          <option value="0.33">33%</option>
+          <option value="0.5">50%</option>
+          <option value="0.75">75%</option>
+          <option value="1">100%</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="group">
+      <label class="toggle" title="Cuộn một khung, các khung khác cuộn theo"><input id="sync-scroll" type="checkbox" /> Đồng bộ cuộn</label>
+      <label class="toggle" title="Bấm link trong một khung, các khung khác mở theo"><input id="sync-nav" type="checkbox" /> Đồng bộ điều hướng</label>
+    </div>
+
+    <div class="group right">
+      <button id="devices-btn" class="btn" aria-expanded="false" aria-controls="devices-panel">Thiết bị</button>
+      <button id="shot-btn" class="btn" title="Chụp toàn bộ màn hình viewer (PNG)">Chụp</button>
+      <button id="theme-btn" class="btn icon" title="Đổi giao diện sáng/tối" aria-label="Đổi giao diện"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="5.5"/><path d="M8 2.5v11a5.5 5.5 0 0 0 0-11z" fill="currentColor"/></svg></button>
+    </div>
+  </header>
+
+  <aside id="devices-panel" class="panel" hidden>
+    <div id="device-groups"></div>
+    <form id="custom-form" class="custom">
+      <div class="panel-title">Thêm kích thước</div>
+      <div class="row">
+        <input id="custom-name" type="text" placeholder="Tên" maxlength="24" />
+        <input id="custom-w" type="number" min="200" max="3840" placeholder="Rộng" required />
+        <span>×</span>
+        <input id="custom-h" type="number" min="200" max="3840" placeholder="Cao" required />
+        <button type="submit" class="btn">Thêm</button>
+      </div>
+    </form>
+    <button id="reset-devices" class="btn ghost">Khôi phục mặc định</button>
+  </aside>
+
+  <main id="stage" class="stage">
+    <div id="empty" class="empty" hidden>
+      <h1>Xem responsive không cần F12</h1>
+      <p>Nhập URL ở thanh trên, hoặc bấm biểu tượng extension (<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>) khi đang ở trang cần xem.</p>
+    </div>
+    <div id="frames" class="frames"></div>
+  </main>
+
+  <template id="frame-tpl">
+    <section class="device">
+      <div class="device-head">
+        <div class="device-title">
+          <span class="device-name"></span>
+          <span class="device-size"></span>
+        </div>
+        <button class="btn icon sm rotate" title="Xoay ngang/dọc" aria-label="Xoay"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="11" height="7" rx="1.5"/><path d="M5 2.5h4.5a2 2 0 0 1 2 2"/><path d="M10 1l1.5 1.5L10 4"/></svg></button>
+        <button class="btn icon sm reload" title="Tải lại khung này" aria-label="Tải lại"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M13.5 2.5v3h-3"/></svg></button>
+        <button class="btn icon sm open" title="Mở khung này trong tab mới" aria-label="Mở tab mới"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5h4.5V7"/><path d="M13.5 2.5 7.5 8.5"/><path d="M12 9.5v3a1 1 0 0 1-1 1H3.5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3"/></svg></button>
+      </div>
+      <div class="device-body">
+        <iframe referrerpolicy="no-referrer-when-downgrade"
+                allow="clipboard-read; clipboard-write; fullscreen; geolocation; camera; microphone"></iframe>
+        <div class="device-hint" hidden></div>
+      </div>
+    </section>
+  </template>
+
+  <script type="module" src="viewer.js"></script>
+</body>
+</html>
