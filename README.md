@@ -18,12 +18,31 @@
 
 | Phiên bản | Tải về | Yêu cầu |
 |---|---|---|
-| 🍎 **macOS** | [**MacHub.dmg**](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub.dmg) · [MacHub.zip](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub.zip) | macOS 14+, Apple Silicon (M1–M5) |
+| 🍎 **macOS** | [**MacHub.dmg**](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub.dmg) · [MacHub.zip](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub.zip) <br>⏳ *Chưa có trong v0.1.0: sẽ có sau khi cấu hình chứng chỉ ký + khóa Sparkle (xem [Phát hành](#phát-hành)). Hai link này hoạt động từ bản có macOS đầu tiên.* | macOS 14+, Apple Silicon (M1–M5) |
 | 🪟 **Windows** | [**MacHub-Windows-Setup.exe**](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub-Windows-Setup.exe) | Windows 10/11 x64 (WebView2, có sẵn trên Windows 11) |
 | 🧩 **Extension trình duyệt** (MacHub Responsive) | [**MacHub-Responsive-Extension.zip**](https://github.com/UriQuynh/MacHub/releases/latest/download/MacHub-Responsive-Extension.zip) | Chrome, Edge, Brave, Arc (Chromium ≥ 116) |
 
 Các link trên luôn trỏ tới **bản phát hành mới nhất**. Mọi phiên bản cũ, ghi chú thay đổi và mã SHA-256
 (file `.sha256` đi kèm) nằm ở trang [**Releases**](https://github.com/UriQuynh/MacHub/releases).
+
+### 🗂️ Tải theo từng phiên bản
+
+Link cố định theo phiên bản (không đổi khi có bản mới). Mẫu chung:
+`https://github.com/UriQuynh/MacHub/releases/download/v<phiên-bản>/<tên-file>`.
+
+| Phiên bản | Ngày | macOS | Windows | Extension | Ghi chú |
+|---|---|---|---|---|---|
+| **v0.1.0** (mới nhất) | 2026-11-19 | ⏳ chưa có | [Setup.exe](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Windows-Setup.exe) · [SHA-256](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Windows-Setup.exe.sha256) | [.zip](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Responsive-Extension.zip) · [SHA-256](https://github.com/UriQuynh/MacHub/releases/download/v0.1.0/MacHub-Responsive-Extension.zip.sha256) | [Release v0.1.0](https://github.com/UriQuynh/MacHub/releases/tag/v0.1.0) |
+
+Mỗi lần phát hành bản mới, thêm một dòng lên đầu bảng. Với bản có macOS, link là
+`.../download/v<phiên-bản>/MacHub.dmg` và `.../MacHub.zip`.
+
+**Kiểm tra toàn vẹn** (so với file `.sha256` cùng bản):
+
+```bash
+shasum -a 256 MacHub-Responsive-Extension.zip      # macOS / Linux
+Get-FileHash .\MacHub-Windows-Setup.exe             # Windows (PowerShell)
+```
 
 ### 🍎 macOS
 
@@ -260,7 +279,28 @@ Bản Windows và extension: xem [`windows/README.md`](windows/README.md) và [`
 
 ### Phát hành
 
-Sửa `VERSION` (và version trong `windows/src-tauri/tauri.conf.json`, `windows/package.json`,
+**Thiết lập một lần** trên Mac của người phát hành (cần để có `MacHub.dmg` và tự cập nhật qua Sparkle):
+
+```bash
+./scripts/setup-signing-identity.sh   # tạo chứng chỉ ký cố định "MacHub Self-Signed" trong ~/.machub-signing
+./scripts/export-ci-signing.sh        # xuất .p12 + base64, in mật khẩu; rồi thêm 2 secret vào repo (bên dưới)
+./scripts/setup-sparkle-keys.sh       # tạo khóa Sparkle, ghi khóa công khai vào config/sparkle_public_ed_key
+                                      # và đặt secret MACHUB_SPARKLE_ED_PRIVATE_KEY qua gh
+```
+
+Hai secret cho chứng chỉ ký (đặt bằng `gh` để khỏi dán sai):
+
+```bash
+gh secret set MACHUB_SIGNING_P12_BASE64 --repo UriQuynh/MacHub < ~/.machub-signing/ci-signing.p12.base64
+gh secret set MACHUB_SIGNING_P12_PASSWORD --repo UriQuynh/MacHub   # dán mật khẩu mà export-ci-signing.sh in ra
+```
+
+Sau `setup-sparkle-keys.sh`, commit `config/sparkle_public_ed_key`. Đủ 3 secret `MACHUB_SIGNING_P12_BASE64`,
+`MACHUB_SIGNING_P12_PASSWORD`, `MACHUB_SPARKLE_ED_PRIVATE_KEY` thì CI mới phát hành được bản macOS. Không commit
+file `.p12`/`.base64`/khóa riêng, và đừng tạo lại chứng chỉ (đổi root hash sẽ làm người dùng mất quyền Trợ năng).
+Chi tiết và các lỗi đã gặp: `AGENTS.md` mục 3 và Phụ lục A7.
+
+**Mỗi lần phát hành:** sửa `VERSION` (và version trong `windows/src-tauri/tauri.conf.json`, `windows/package.json`,
 `extensions/responsive/manifest.json` cho khớp), merge vào `main`, rồi đẩy tag `v<VERSION>`. CI tự tạo Release:
 - `release.yml` → `MacHub.dmg`, `MacHub.zip`, `appcast.xml` (cần chứng chỉ ký + khóa Sparkle, xem `AGENTS.md` mục 3);
 - `release-assets.yml` → `MacHub-Windows-Setup.exe`, `MacHub-Responsive-Extension.zip` kèm `.sha256`.
@@ -269,7 +309,9 @@ Sửa `VERSION` (và version trong `windows/src-tauri/tauri.conf.json`, `windows
 
 ## 📝 Nhật ký thay đổi
 
-### [0.1.0] — chưa phát hành (2026-11-19): tách khỏi HyperMac v1.9.8
+### [0.1.0] — 2026-11-19: tách khỏi HyperMac v1.9.8 ([tải về](https://github.com/UriQuynh/MacHub/releases/tag/v0.1.0))
+Bản này có Windows và extension; bản macOS (`MacHub.dmg`) sẽ bổ sung sau khi cấu hình chứng chỉ ký + khóa Sparkle.
+
 Những thay đổi so với HyperMac v1.9.8 (commit `c01fdd8`), theo yêu cầu ghi chú chỉnh sửa của GPLv3:
 - Đổi tên thành MacHub (bundle ID `com.machub.app`, đường dẫn helper, chứng chỉ ký).
 - Bỏ màn hình kích hoạt qua nhóm Zalo và phần Donate/QR của tác giả gốc; chân trang dẫn về dự án HyperMac.
