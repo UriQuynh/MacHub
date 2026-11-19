@@ -188,6 +188,7 @@ struct TopTabBar: View {
             tabButton(index: 1, title: tr("Phần cứng", "Hardware"), icon: "bolt.batteryblock")
             tabButton(index: 2, title: tr("Phím tắt", "Shortcuts"), icon: "keyboard")
             tabButton(index: 3, title: tr("Dọn dẹp", "Cleaner"), icon: "sparkles")
+            tabButton(index: 4, title: "Agent", icon: "terminal")
         }
         .padding(3)
         .background(RoundedRectangle(cornerRadius: Rad.sm).fill(Color.primary.opacity(0.05)))

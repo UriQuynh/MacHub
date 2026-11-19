@@ -78,6 +78,8 @@ public struct MainView: View {
                         )
                     case 3:
                         CleanerTabView(cleanerManager: cleanerManager)
+                    case 4:
+                        AgentTabView(monitor: AgentMonitor.shared)
                     default:
                         DisplaysTabView(
                             displayManager: displayManager,

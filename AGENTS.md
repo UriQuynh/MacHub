@@ -55,6 +55,10 @@ swift test                    # unit test (Tests/ScreenshotAnnotationTests)
 | `Sources/SystemCleanerManager.swift`, `CleanerTabView.swift` | Dọn rác, gỡ app |
 | `Sources/ScreenshotManager.swift`, `ScreenshotOverlayView.swift`, `ScreenshotAnnotationRenderer.swift` | Chụp & chú thích |
 | `Sources/UpdateManager.swift` | Sparkle |
+| `Sources/AgentKit/` | Thư viện thuần Foundation: đọc transcript Claude Code / rollout Codex, hạn mức (statusLine, OAuth), bảng giá, tổng hợp token, socket Unix, cài hook vào `~/.claude/settings.json` |
+| `Sources/AgentHook/main.swift` | `machub-agent-hook`: Claude Code gọi qua hook/statusLine, chuyển sự kiện tới app qua socket; luôn thoát 0, không bao giờ tự cho phép |
+| `Sources/Agents/` | `AgentMonitor` (trạng thái phiên, duyệt quyền, quét log), `AgentApprovalPanel`, OAuth (tùy chọn), cài hook |
+| `Sources/UI/AgentTabView.swift` | Tab Agent: Phiên / Hạn mức / Token / Chi phí / Cài đặt |
 | `Sources/Logger.swift`, `ShellHelper.swift` | Log, `shell()` |
 | `Vendor/smc-command/` | Mã nguồn `smc` (GPLv2+) |
 
@@ -71,6 +75,13 @@ swift test                    # unit test (Tests/ScreenshotAnnotationTests)
   - Helper chạy root (`machub-power`) phải tự kiểm tra mọi tham số; không mở rộng rule sudoers.
   - Không thêm binary dựng sẵn không có nguồn vào repo.
 - Không hardcode đường dẫn máy dev. Không tự tạo tag/release khi chưa được xác nhận.
+- **Theo dõi agent:**
+  - Hook phải luôn thoát 0, không in ra stderr; với `PermissionRequest`, không có quyết định rõ ràng thì KHÔNG in gì
+    (Claude Code tự hỏi trong terminal). Không bao giờ thêm đường "tự cho phép".
+  - Chỉ sửa `~/.claude/settings.json` khi người dùng bấm nút; luôn sao lưu; chỉ đụng mục chứa `machub-agent-hook`.
+  - Prompt / tin nhắn chỉ giữ trong RAM, không ghi đĩa. OAuth mặc định tắt, không tự làm mới token.
+  - Kiểm thử: `swift test --filter AgentKitTests` (gồm chạy thật `machub-agent-hook` với socket).
+  - Dữ liệu mẫu cho UI: `MACHUB_PREVIEW=1 MACHUB_PREVIEW_TAB=4 MACHUB_AGENT_FIXTURES=1 MACHUB_PREVIEW_OUT=/tmp/agent.png`.
 
 ---
 
