@@ -127,7 +127,7 @@ final class AgentMonitor: ObservableObject {
 
     func setTabVisible(_ visible: Bool) {
         tabVisible = visible
-        if visible {
+        if visible, ProcessInfo.processInfo.environment["MACHUB_AGENT_FIXTURES"] != "1" {
             refreshHookState()
             scanNow()
         }
