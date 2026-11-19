@@ -23,12 +23,16 @@ public struct ModelPrice: Codable, Equatable, Sendable {
     }
 
     func cost(_ r: UsageRecord) -> Double {
-        let m = 1_000_000.0
-        return Double(r.inputTokens) * input / m
-            + Double(r.outputTokens) * output / m
-            + Double(r.cacheWrite5mTokens) * (cacheWrite5m ?? input * 1.25) / m
-            + Double(r.cacheWrite1hTokens) * (cacheWrite1h ?? input * 2) / m
-            + Double(r.cacheReadTokens) * (cacheRead ?? input * 0.1) / m
+        let m: Double = 1_000_000
+        let write5m: Double = cacheWrite5m ?? input * 1.25
+        let write1h: Double = cacheWrite1h ?? input * 2
+        let read: Double = cacheRead ?? input * 0.1
+        var usd: Double = Double(r.inputTokens) * input
+        usd += Double(r.outputTokens) * output
+        usd += Double(r.cacheWrite5mTokens) * write5m
+        usd += Double(r.cacheWrite1hTokens) * write1h
+        usd += Double(r.cacheReadTokens) * read
+        return usd / m
     }
 }
 
