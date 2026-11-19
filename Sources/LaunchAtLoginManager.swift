@@ -55,7 +55,7 @@ public class LaunchAtLoginManager: ObservableObject {
         if path.hasSuffix(".app") {
             return path
         }
-        return "/Applications/HyperMac.app"
+        return "/Applications/MacHub.app"
     }
 
     // MARK: - System Registration (SMAppService + System Events Fallback)
@@ -74,8 +74,8 @@ public class LaunchAtLoginManager: ObservableObject {
         // Always ensure presence in System Events login items for complete launch reliability
         let script = """
         tell application "System Events"
-            if not (exists (first login item whose name is "HyperMac")) then
-                make login item at end with properties {path:"\(appPath)", hidden:false, name:"HyperMac"}
+            if not (exists (first login item whose name is "MacHub")) then
+                make login item at end with properties {path:"\(appPath)", hidden:false, name:"MacHub"}
             end if
         end tell
         """
@@ -95,7 +95,7 @@ public class LaunchAtLoginManager: ObservableObject {
 
         let script = """
         tell application "System Events"
-            delete (every login item whose name is "HyperMac")
+            delete (every login item whose name is "MacHub")
         end tell
         """
         runAppleScript(script)
@@ -110,7 +110,7 @@ public class LaunchAtLoginManager: ObservableObject {
 
         let script = """
         tell application "System Events"
-            return exists (first login item whose name is "HyperMac")
+            return exists (first login item whose name is "MacHub")
         end tell
         """
         let result = runAppleScript(script)?.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
-// HyperMac — Copyright (C) 2026 Nguyễn Khắc Đại
+// MacHub — fork of HyperMac. Original work Copyright (C) 2026 Nguyễn Khắc Đại.
+// Modifications Copyright (C) 2026 MacHub contributors.
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, version 3 of the License.
@@ -34,7 +35,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         NSApp.setActivationPolicy(.accessory)
 
         // UI preview window (chỉ dùng khi kiểm thử giao diện, không ảnh hưởng người dùng)
-        if ProcessInfo.processInfo.environment["HYPERMAC_PREVIEW"] == "1" {
+        if ProcessInfo.processInfo.environment["MACHUB_PREVIEW"] == "1" {
             showPreviewWindow()
             return
         }
@@ -53,7 +54,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         // Initialize Status Item
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "command.circle.fill", accessibilityDescription: "HyperMac")
+            button.image = NSImage(systemSymbolName: "command.circle.fill", accessibilityDescription: "MacHub")
             button.font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium)
             button.action = #selector(togglePopover)
             button.target = self
@@ -83,28 +84,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         _ = SystemMonitorManager.shared
         _ = ScreenshotManager.shared
         _ = MenuBarHiderManager.shared
-        _ = ActivationManager.shared
-
-        // Tự động mở bảng kích hoạt nếu đây là lần đầu người dùng khởi động ứng dụng
-        if !ActivationManager.shared.isActivated {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
-                guard let self = self, let button = self.statusItem?.button else { return }
-                if !self.popover.isShown {
-                    self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-                    self.popover.contentViewController?.view.window?.makeKey()
-                    NSApp.activate(ignoringOtherApps: true)
-                }
-            }
-        }
+        // Khởi động Sparkle ngay khi mở app để lịch kiểm tra cập nhật chạy kể cả khi chưa mở popover.
+        _ = UpdateManager.shared
 
         // Register for display reconfiguration
         CGDisplayRegisterReconfigurationCallback(displayReconfigCallback, nil)
 
         // Hook kiểm thử: giả lập popover mở/đóng mà không cần bấm menu bar.
         let env = ProcessInfo.processInfo.environment
-        if env["HYPERMAC_DISKSPEED_AUTOSTART"] == "1" {
+        if env["MACHUB_DISKSPEED_AUTOSTART"] == "1" {
             DiskSpeedManager.shared.setPopoverVisible(true)
-            if let seconds = Double(env["HYPERMAC_DISKSPEED_AUTOCLOSE"] ?? ""), seconds > 0 {
+            if let seconds = Double(env["MACHUB_DISKSPEED_AUTOCLOSE"] ?? ""), seconds > 0 {
                 DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
                     DiskSpeedManager.shared.setPopoverVisible(false)
                 }
@@ -118,28 +108,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         FanManager.shared.restoreSystemSync()
         // Phục hồi đồng bộ công tắc sạc SMC khi thoát app (nhả CHTE/CH0B nhưng giữ trần CHLT nếu đang bật bảo vệ)
         BatteryManager.shared.restoreOnTerminateSync()
-        // Chỉ trả bảng gamma màn ngoài về ColorSync nếu HyperMac thực sự đã điều chỉnh gamma trước đó
+        // Chỉ trả bảng gamma màn ngoài về ColorSync nếu MacHub thực sự đã điều chỉnh gamma trước đó
         DisplayManager.shared.restoreHardwareGammaIfNeeded()
     }
 
-    /// Cửa sổ xem trước UI khi đặt `HYPERMAC_PREVIEW=1` (dùng để chụp/kiểm tra layout).
-    /// `HYPERMAC_PREVIEW_TAB=0|1|2` chọn tab, mặc định 1 (Pin & Phần cứng).
-    /// `HYPERMAC_PREVIEW_OUT=/path.png` render thẳng ra PNG (không cần quyền chụp màn hình).
+    /// Cửa sổ xem trước UI khi đặt `MACHUB_PREVIEW=1` (dùng để chụp/kiểm tra layout).
+    /// `MACHUB_PREVIEW_TAB=0|1|2` chọn tab, mặc định 1 (Pin & Phần cứng).
+    /// `MACHUB_PREVIEW_OUT=/path.png` render thẳng ra PNG (không cần quyền chụp màn hình).
     private func showPreviewWindow() {
-        let tab = Int(ProcessInfo.processInfo.environment["HYPERMAC_PREVIEW_TAB"] ?? "") ?? 1
+        let tab = Int(ProcessInfo.processInfo.environment["MACHUB_PREVIEW_TAB"] ?? "") ?? 1
         DisplayManager.shared.selectedMainTab = tab
 
-        if let langStr = ProcessInfo.processInfo.environment["HYPERMAC_PREVIEW_LANG"] {
+        if let langStr = ProcessInfo.processInfo.environment["MACHUB_PREVIEW_LANG"] {
             LanguageManager.shared.currentLanguage = (langStr.lowercased() == "en") ? .en : .vi
         }
 
-        if let subTabStr = ProcessInfo.processInfo.environment["HYPERMAC_PREVIEW_SUBTAB"], let subTab = Int(subTabStr) {
+        if let subTabStr = ProcessInfo.processInfo.environment["MACHUB_PREVIEW_SUBTAB"], let subTab = Int(subTabStr) {
             SystemCleanerManager.shared.selectedSection = subTab
             if subTab == 0 {
                 SystemCleanerManager.shared.scanJunk()
             } else if subTab == 1 {
                 SystemCleanerManager.shared.scanInstalledApps()
-                if ProcessInfo.processInfo.environment["HYPERMAC_PREVIEW_INSPECT_APP"] == "1" {
+                if ProcessInfo.processInfo.environment["MACHUB_PREVIEW_INSPECT_APP"] == "1" {
                     RunLoop.main.run(until: Date().addingTimeInterval(0.6))
                     if let app = SystemCleanerManager.shared.installedApps.first(where: { $0.bundleID == "com.google.Chrome" }) ?? SystemCleanerManager.shared.installedApps.first {
                         SystemCleanerManager.shared.inspectAppLeftovers(for: app)
@@ -152,30 +142,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             SystemCleanerManager.shared.scanJunk()
         }
 
-        if ProcessInfo.processInfo.environment["HYPERMAC_PREVIEW_EXPAND_PERMS"] == "1" {
+        if ProcessInfo.processInfo.environment["MACHUB_PREVIEW_EXPAND_PERMS"] == "1" {
             PermissionsManager.shared.isExpanded = true
         }
 
-        if ProcessInfo.processInfo.environment["HYPERMAC_PREVIEW_DONATE"] == "1" {
-            UpdateManager.shared.showDonateModal = true
-        }
-
-        if ProcessInfo.processInfo.environment["HYPERMAC_PREVIEW_ACTIVATION"] == "1" {
-            ActivationManager.shared.isActivated = false
-        }
-
-        if ProcessInfo.processInfo.environment["HYPERMAC_PREVIEW_THERMAL"] == "1" {
+        if ProcessInfo.processInfo.environment["MACHUB_PREVIEW_THERMAL"] == "1" {
             _ = FanManager.shared
             _ = SystemMonitorManager.shared
             ThermalManager.shared.selectedSection = 1
         }
 
-        let waitSec = Double(ProcessInfo.processInfo.environment["HYPERMAC_PREVIEW_WAIT"] ?? "") ?? 0.25
+        let waitSec = Double(ProcessInfo.processInfo.environment["MACHUB_PREVIEW_WAIT"] ?? "") ?? 0.25
 
         let view = MainView(displayManager: DisplayManager.shared)
             .frame(width: 380, height: 570)
 
-        if let out = ProcessInfo.processInfo.environment["HYPERMAC_PREVIEW_OUT"], !out.isEmpty {
+        if let out = ProcessInfo.processInfo.environment["MACHUB_PREVIEW_OUT"], !out.isEmpty {
             let window = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 380, height: 600),
                 styleMask: [.borderless],
@@ -205,7 +187,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "HyperMac UI Preview"
+        window.title = "MacHub UI Preview"
         window.contentView = NSHostingView(rootView: view)
         window.center()
         window.makeKeyAndOrderFront(nil)
@@ -267,7 +249,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
 @main
 @MainActor
-enum HyperMacMain {
+enum MacHubMain {
     static let delegate = AppDelegate()
 
     static func main() {

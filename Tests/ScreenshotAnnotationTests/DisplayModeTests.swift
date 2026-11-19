@@ -1,7 +1,7 @@
 import Testing
 import Foundation
 import CoreGraphics
-@testable import HyperMac
+@testable import MacHub
 
 private let retina = DisplayResolution(width: 1470, height: 956, pixelWidth: 2940, pixelHeight: 1912)
 private let large = DisplayResolution(width: 1920, height: 1080, pixelWidth: 3840, pixelHeight: 2160)

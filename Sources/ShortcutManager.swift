@@ -175,8 +175,8 @@ struct ShortcutConfiguration {
             ([20,21,23].contains(binding.keyCode) && binding.flags == [.maskCommand, .maskShift]) ||
             ([123,124,125,126].contains(binding.keyCode) && binding.flags == .maskControl) ||
             (binding.flags.isEmpty && ShortcutBinding.functionKeys[binding.keyCode] != nil) {
-            return tr("Có thể trùng phím macOS. Khi HyperMac nhận phím này, chức năng hệ thống có thể bị thay thế.",
-                      "May conflict with macOS. When HyperMac handles this key, the system action may be replaced.")
+            return tr("Có thể trùng phím macOS. Khi MacHub nhận phím này, chức năng hệ thống có thể bị thay thế.",
+                      "May conflict with macOS. When MacHub handles this key, the system action may be replaced.")
         }
         return nil
     }
@@ -195,7 +195,7 @@ final class ShortcutManager: ObservableObject {
     @Published private(set) var configuration: ShortcutConfiguration
     private let defaults: UserDefaults
     private let publishRuntime: Bool
-    static let preferencesKey = "hypermac_shortcuts_v1"
+    static let preferencesKey = "machub_shortcuts_v1"
     init(defaults: UserDefaults = .standard, publishRuntime: Bool = true) {
         self.defaults = defaults
         self.publishRuntime = publishRuntime
@@ -291,7 +291,7 @@ final class ShortcutManager: ObservableObject {
         if let data = try? JSONEncoder().encode(saved) { defaults.set(data, forKey: Self.preferencesKey) }
         if publishRuntime {
             gShortcutConfiguration = configuration
-            NotificationCenter.default.post(name: .hypermacShortcutsChanged, object: nil)
+            NotificationCenter.default.post(name: .machubShortcutsChanged, object: nil)
         }
     }
     func perform(_ action: ShortcutAction) {
@@ -308,5 +308,5 @@ final class ShortcutManager: ObservableObject {
     }
 }
 extension Notification.Name {
-    static let hypermacShortcutsChanged = Notification.Name("HyperMacShortcutsChanged")
+    static let machubShortcutsChanged = Notification.Name("MacHubShortcutsChanged")
 }

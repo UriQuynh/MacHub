@@ -1,10 +1,10 @@
 #!/bin/bash
-# HyperMac Power & Battery SMC Management Helper
+# MacHub Power & Battery SMC Management Helper
 
 # Chạy bằng root qua sudo: không tin $PATH người gọi, chỉ dùng smc là tệp thường do root sở hữu
 # nằm cạnh helper (cài bởi install-helper.sh). Không tìm smc ở thư mục user ghi được.
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin
-SMC="/Library/PrivilegedHelperTools/com.opensource.hypermac.smc"
+SMC="/Library/PrivilegedHelperTools/com.machub.app.smc"
 
 if [ ! -x "$SMC" ] || [ -L "$SMC" ] || [ "$(stat -f %u "$SMC")" != "0" ]; then
     echo "ERROR: smc binary not found"

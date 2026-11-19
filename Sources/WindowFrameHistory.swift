@@ -1,6 +1,6 @@
 import CoreGraphics
 
-/// One original frame per window, preserved across successive HyperMac operations.
+/// One original frame per window, preserved across successive MacHub operations.
 /// Tokens also prevent delayed AX retries from overwriting a newer snap/restore.
 struct WindowFrameHistory<Key: Hashable> {
     private struct Entry {

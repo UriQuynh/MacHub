@@ -1,7 +1,7 @@
 import Testing
 import Foundation
 import CoreGraphics
-@testable import HyperMac
+@testable import MacHub
 
 @MainActor
 struct WindowDisplayTransferTests {
@@ -82,7 +82,7 @@ struct WindowDisplayTransferTests {
     }
 
     @Test func preferencePersistsBothModesWithoutChangingShortcuts() throws {
-        let suite = "HyperMac.DisplayTransferTests." + UUID().uuidString
+        let suite = "MacHub.DisplayTransferTests." + UUID().uuidString
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         defaults.set(Data([1, 2, 3]), forKey: ShortcutManager.preferencesKey)

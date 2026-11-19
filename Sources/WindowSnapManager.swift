@@ -402,7 +402,7 @@ public class WindowSnapManager: ObservableObject {
         }
     }
 
-    /// Original HyperMac behavior: preserve screen coverage and recognized half/corner layouts.
+    /// Original MacHub behavior: preserve screen coverage and recognized half/corner layouts.
     private static func calculateProportionalCrossDisplayRect(window: CGRect, source: CGRect, destination: CGRect) -> CGRect {
 
         let originXFrac = (window.minX - source.minX) / source.width

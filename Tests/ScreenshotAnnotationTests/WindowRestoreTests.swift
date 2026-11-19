@@ -1,7 +1,7 @@
 import Testing
 import CoreGraphics
 import Foundation
-@testable import HyperMac
+@testable import MacHub
 
 struct WindowRestoreTests {
     let original = CGRect(x: 140, y: 100, width: 800, height: 600)
@@ -68,7 +68,7 @@ struct WindowRestoreTests {
         #expect(history.original(for: 3) == original)
     }
     @Test @MainActor func migrateCenterAliasesWithoutLosingCustomShortcuts() throws {
-        let suite = "HyperMac.RestoreTests." + UUID().uuidString
+        let suite = "MacHub.RestoreTests." + UUID().uuidString
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let co: CGEventFlags = [.maskControl, .maskAlternate]
@@ -89,7 +89,7 @@ struct WindowRestoreTests {
         #expect(reloaded.configuration.match(16, flags: [.maskCommand, .maskControl])?.action == .restoreWindow)
     }
     @Test @MainActor func newRestoreDefaultDoesNotResetConflictingCustomPreferences() throws {
-        let suite = "HyperMac.RestoreTests." + UUID().uuidString
+        let suite = "MacHub.RestoreTests." + UUID().uuidString
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let co: CGEventFlags = [.maskControl, .maskAlternate]

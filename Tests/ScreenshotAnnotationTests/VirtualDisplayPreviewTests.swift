@@ -1,11 +1,11 @@
 import Testing
 import AppKit
 import SwiftUI
-@testable import HyperMac
+@testable import MacHub
 
 struct VirtualDisplayPreviewTests {
     @Test @MainActor func ultrawideCardPreview() throws {
-        guard let directory = ProcessInfo.processInfo.environment["HYPERMAC_VIRTUAL_DISPLAY_QA_OUT"] else { return }
+        guard let directory = ProcessInfo.processInfo.environment["MACHUB_VIRTUAL_DISPLAY_QA_OUT"] else { return }
         let manager = VirtualDisplayManager.shared
         // Layout QA only: do not create displays or change the user's mirroring arrangement.
         #expect(!manager.isVirtualDisplayActive)
@@ -27,7 +27,7 @@ struct VirtualDisplayPreviewTests {
             let bitmap = try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds))
             view.cacheDisplay(in: view.bounds, to: bitmap)
             try #require(bitmap.representation(using: .png, properties: [:]))
-                .write(to: URL(fileURLWithPath: directory).appendingPathComponent("hypermac-ultrawide-\(width).png"))
+                .write(to: URL(fileURLWithPath: directory).appendingPathComponent("machub-ultrawide-\(width).png"))
             window.contentView = nil
         }
     }

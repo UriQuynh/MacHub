@@ -271,7 +271,7 @@ public struct ClipboardOverlayView: View {
                             if let data = item.imageData, let img = NSImage(data: data) {
                                 return img
                             }
-                            if let url = manager.imageURL(for: item), let data = try? Data(contentsOf: url) {
+                            if let data = manager.fullImageData(for: item) {
                                 return NSImage(data: data)
                             }
                             return nil
@@ -405,7 +405,7 @@ public struct ClipboardOverlayView: View {
                 .font(.system(size: FS.body, weight: .semibold))
                 .foregroundStyle(.secondary)
 
-            Text(tr("Hãy sao chép (⌘C) văn bản, hình ảnh hoặc tệp tin để lưu vào HyperMac.", "Copy (⌘C) text, images or files to save them in HyperMac."))
+            Text(tr("Hãy sao chép (⌘C) văn bản, hình ảnh hoặc tệp tin để lưu vào MacHub.", "Copy (⌘C) text, images or files to save them in MacHub."))
                 .font(.system(size: FS.caption))
                 .foregroundStyle(.secondary.opacity(0.8))
                 .multilineTextAlignment(.center)
