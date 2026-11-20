@@ -49,6 +49,7 @@ final class AgentMonitor: ObservableObject {
         didSet {
             UserDefaults.standard.set(oauthEnabled, forKey: Keys.oauth)
             oauthError = nil
+            oauthBackoffUntil = .distantPast  // bật lại = thử lại ngay, kể cả sau khi từng bị từ chối
             if oauthEnabled { refreshOAuth(force: true) } else { claudeOAuthLimits = nil; publishLimits() }
         }
     }
@@ -86,6 +87,7 @@ final class AgentMonitor: ObservableObject {
     private var lastScanAt = Date.distantPast
     private var lastOAuthAt = Date.distantPast
     private var oauthBackoffUntil = Date.distantPast
+    private var oauthInFlight = false
     private var started = false
 
     private init() {}
@@ -342,14 +344,17 @@ final class AgentMonitor: ObservableObject {
 
     func refreshOAuth(force: Bool) {
         let now = Date()
-        guard oauthEnabled, now >= oauthBackoffUntil else { return }
-        // 5 phút một lần khi đang mở bảng, 15 phút khi chạy nền.
+        guard oauthEnabled, !oauthInFlight, now >= oauthBackoffUntil else { return }
+        // 5 phút một lần khi đang mở bảng, 15 phút khi chạy nền (tính từ lúc lần trước KẾT THÚC).
         let interval: TimeInterval = popoverVisible ? 300 : 900
         guard force || now.timeIntervalSince(lastOAuthAt) >= interval else { return }
-        lastOAuthAt = now
+        oauthInFlight = true
         Task {
             let result = await ClaudeOAuthUsageClient.fetch()
             await MainActor.run {
+                self.oauthInFlight = false
+                self.lastOAuthAt = Date()
+                guard self.oauthEnabled else { return }  // đã tắt trong lúc chờ
                 switch result {
                 case .success(let snap):
                     self.claudeOAuthLimits = snap
@@ -358,7 +363,8 @@ final class AgentMonitor: ObservableObject {
                 case .failure(let e):
                     self.oauthError = e.message
                     if case .http(429) = e { self.oauthBackoffUntil = Date().addingTimeInterval(900) }
-                    if case .keychainDenied = e { self.oauthBackoffUntil = .distantFuture }
+                    // Bị từ chối/huỷ: nghỉ 6 giờ (hoặc đến khi bật lại tuỳ chọn) thay vì hỏi tiếp mỗi vài phút.
+                    if case .keychainDenied = e { self.oauthBackoffUntil = Date().addingTimeInterval(6 * 3600) }
                 }
             }
         }

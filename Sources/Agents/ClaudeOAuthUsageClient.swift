@@ -3,13 +3,15 @@
 
 import AgentKit
 import Foundation
-import Security
 
 /// TÙY CHỌN (mặc định tắt): đọc hạn mức Claude từ `https://api.anthropic.com/api/oauth/usage`
 /// bằng token OAuth mà Claude Code lưu trong Keychain ("Claude Code-credentials").
 ///
 /// - Endpoint không có tài liệu chính thức: có thể đổi bất cứ lúc nào → lỗi được báo nhẹ nhàng.
-/// - Lần đầu, macOS hỏi bạn có cho MacHub đọc mục Keychain này không.
+/// - Token được đọc qua `/usr/bin/security` (công cụ của Apple, đã nằm sẵn trong danh sách tin cậy của mục Keychain
+///   này) chứ KHÔNG gọi `SecItemCopyMatching` trực tiếp: quyền truy cập theo chữ ký của MacHub mất hiệu lực mỗi
+///   lần build/cập nhật (chứng chỉ tự ký → ràng buộc theo cdhash) và macOS lại hỏi mật khẩu Keychain.
+/// - Token được giữ trong bộ nhớ đến lúc hết hạn nên không đọc Keychain ở mỗi lần poll.
 /// - MacHub KHÔNG tự làm mới token (làm vậy có thể đăng xuất Claude Code). Token hết hạn → nhắc mở Claude Code.
 /// - Token chỉ giữ trong bộ nhớ trong lúc gọi, không lưu lại, không gửi đi đâu khác.
 enum ClaudeOAuthUsageClient {
@@ -39,7 +41,7 @@ enum ClaudeOAuthUsageClient {
 
     static func fetch() async -> Swift.Result<LimitSnapshot, FetchError> {
         let token: String
-        switch readToken() {
+        switch readToken(forceReload: false) {
         case .success(let t): token = t
         case .failure(let e): return .failure(e)
         }
@@ -51,6 +53,7 @@ enum ClaudeOAuthUsageClient {
         do {
             let (data, resp) = try await URLSession.shared.data(for: req)
             let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
+            if code == 401 || code == 403 { cache.set(nil) }  // Claude Code có thể đã làm mới token: lần sau đọc lại
             guard code == 200 else { return .failure(.http(code)) }
             guard let snap = ClaudeOAuthUsage.parse(data) else { return .failure(.badResponse) }
             return .success(snap)
@@ -59,28 +62,61 @@ enum ClaudeOAuthUsageClient {
         }
     }
 
-    private static func readToken() -> Swift.Result<String, FetchError> {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "Claude Code-credentials",
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
-        var item: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &item)
-        switch status {
-        case errSecSuccess: break
-        case errSecItemNotFound: return .failure(.noCredentials)
-        case errSecUserCanceled, errSecAuthFailed, errSecInteractionNotAllowed: return .failure(.keychainDenied)
-        default: return .failure(.network("Keychain \(status)"))
+    /// Token đang giữ trong bộ nhớ; chỉ đọc Keychain lại khi hết hạn hoặc bị máy chủ từ chối.
+    private static let cache = TokenCache()
+
+    private final class TokenCache: @unchecked Sendable {
+        private let lock = NSLock()
+        private var creds: ClaudeCredentials?
+        func get() -> ClaudeCredentials? { lock.lock(); defer { lock.unlock() }; return creds }
+        func set(_ c: ClaudeCredentials?) { lock.lock(); creds = c; lock.unlock() }
+    }
+
+    /// Chạy `/usr/bin/security find-generic-password -s … -w` (không qua shell), tối đa `timeout` giây.
+    /// Trả về nội dung stdout hoặc mã thoát: 44 = không có mục; 36/51/128 = bị từ chối/huỷ.
+    static func runSecurity(timeout: TimeInterval = 10) -> Swift.Result<Data, FetchError> {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/security")
+        p.arguments = ["find-generic-password", "-s", "Claude Code-credentials", "-w"]
+        let out = Pipe()
+        p.standardOutput = out
+        p.standardError = FileHandle.nullDevice
+        p.standardInput = FileHandle.nullDevice
+        do { try p.run() } catch { return .failure(.network("security: \(error.localizedDescription)")) }
+
+        // Đọc stdout song song để ống không đầy; quá hạn thì dừng (tránh treo nếu macOS hiện hộp thoại).
+        var buf = Data()
+        let reader = DispatchGroup()
+        reader.enter()
+        DispatchQueue.global(qos: .utility).async {
+            buf = out.fileHandleForReading.readDataToEndOfFile()
+            reader.leave()
         }
-        guard let data = item as? Data, let json = JSONValue.parse(data),
-              let oauth = json["claudeAiOauth"], let token = oauth["accessToken"]?.string, !token.isEmpty else {
-            return .failure(.noCredentials)
+        let deadline = Date().addingTimeInterval(timeout)
+        while p.isRunning && Date() < deadline { Thread.sleep(forTimeInterval: 0.05) }
+        if p.isRunning {
+            p.terminate()
+            reader.wait()
+            return .failure(.keychainDenied)
         }
-        if let exp = oauth["expiresAt"]?.double, Date(timeIntervalSince1970: exp / 1000) < Date() {
-            return .failure(.expired)
+        reader.wait()
+        switch p.terminationStatus {
+        case 0: return .success(buf)
+        case 44: return .failure(.noCredentials)
+        default: return .failure(.keychainDenied)
         }
-        return .success(token)
+    }
+
+    private static func readToken(forceReload: Bool) -> Swift.Result<String, FetchError> {
+        if !forceReload, let c = cache.get(), c.isValid() { return .success(c.accessToken) }
+        cache.set(nil)
+        switch runSecurity() {
+        case .failure(let e): return .failure(e)
+        case .success(let data):
+            guard let creds = ClaudeCredentials.parse(data) else { return .failure(.noCredentials) }
+            guard creds.isValid() else { return .failure(.expired) }
+            cache.set(creds)
+            return .success(creds.accessToken)
+        }
     }
 }
