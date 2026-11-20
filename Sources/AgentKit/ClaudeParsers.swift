@@ -51,6 +51,30 @@ public enum ClaudeTranscript {
     }
 }
 
+/// Token OAuth trong mục Keychain "Claude Code-credentials" (JSON: `claudeAiOauth.accessToken`, `expiresAt` tính bằng ms).
+public struct ClaudeCredentials: Equatable, Sendable {
+    public var accessToken: String
+    public var expiresAt: Date?
+
+    public init(accessToken: String, expiresAt: Date?) {
+        self.accessToken = accessToken
+        self.expiresAt = expiresAt
+    }
+
+    public static func parse(_ data: Data) -> ClaudeCredentials? {
+        guard let json = JSONValue.parse(data), let oauth = json["claudeAiOauth"],
+              let token = oauth["accessToken"]?.string, !token.isEmpty else { return nil }
+        let exp = oauth["expiresAt"]?.double.map { Date(timeIntervalSince1970: $0 / 1000) }
+        return ClaudeCredentials(accessToken: token, expiresAt: exp)
+    }
+
+    /// Còn dùng được nếu chưa tới `expiresAt` trừ một khoảng đệm (token không có hạn coi như còn dùng được).
+    public func isValid(at now: Date = Date(), leeway: TimeInterval = 60) -> Bool {
+        guard let expiresAt else { return true }
+        return expiresAt.addingTimeInterval(-leeway) > now
+    }
+}
+
 /// Phản hồi của `GET https://api.anthropic.com/api/oauth/usage` (không có tài liệu chính thức,
 /// nên đọc mềm dẻo: mọi khóa có `utilization` đều được coi là một cửa sổ hạn mức).
 public enum ClaudeOAuthUsage {

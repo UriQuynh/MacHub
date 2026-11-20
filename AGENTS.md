@@ -81,6 +81,7 @@ swift test                    # unit test (Tests/ScreenshotAnnotationTests)
     (Claude Code tự hỏi trong terminal). Không bao giờ thêm đường "tự cho phép".
   - Chỉ sửa `~/.claude/settings.json` khi người dùng bấm nút; luôn sao lưu; chỉ đụng mục chứa `machub-agent-hook`.
   - Prompt / tin nhắn chỉ giữ trong RAM, không ghi đĩa. OAuth mặc định tắt, không tự làm mới token.
+  - Token OAuth đọc qua `/usr/bin/security` (đã được tin trong ACL của mục "Claude Code-credentials"), KHÔNG dùng `SecItemCopyMatching`: chữ ký tự ký đổi cdhash mỗi bản build nên quyền "Always Allow" sẽ mất và macOS hỏi lại mật khẩu Keychain. Token cache trong RAM đến lúc hết hạn; chỉ một lần đọc cùng lúc.
   - Kiểm thử: `swift test --filter AgentKitTests` (gồm chạy thật `machub-agent-hook` với socket).
   - Dữ liệu mẫu cho UI: `MACHUB_PREVIEW=1 MACHUB_PREVIEW_TAB=4 MACHUB_AGENT_FIXTURES=1 MACHUB_PREVIEW_OUT=/tmp/agent.png`.
 
