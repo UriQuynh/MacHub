@@ -51,17 +51,39 @@ private let cgsAPI: CGSAPI? = {
     )
 }()
 
-/// Window IDs on every Space of every display, or nil if the private API is unavailable.
-private func allSpacesWindowIDs() -> [CGWindowID]? {
+/// Space IDs to look at. `displays` is the `CGSCopyManagedDisplaySpaces` result.
+/// With `onlyDisplay` set, only that display's Spaces are returned; the main display may be reported as
+/// "Main" instead of its UUID, so `primaryUUID` lets us match it. If no display matches we return every
+/// Space rather than hiding windows because of an identifier we could not resolve.
+func spaceIDs(in displays: [[String: Any]], onlyDisplay: String?, primaryUUID: String?) -> [Int] {
+    func ids(_ list: [[String: Any]]) -> [Int] {
+        list.flatMap { display in
+            (display["Spaces"] as? [[String: Any]] ?? []).compactMap { $0["id64"] as? Int }
+        }
+    }
+    guard let onlyDisplay else { return ids(displays) }
+    let matching = displays.filter { display in
+        let identifier = display["Display Identifier"] as? String
+        return identifier == onlyDisplay || (identifier == "Main" && onlyDisplay == primaryUUID)
+    }
+    return matching.isEmpty ? ids(displays) : ids(matching)
+}
+
+/// UUID string of a screen, as used by "Display Identifier" in the CGS Space list.
+func displayUUIDString(for screen: NSScreen) -> String? {
+    guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber,
+          let uuid = CGDisplayCreateUUIDFromDisplayID(CGDirectDisplayID(number.uint32Value))?.takeRetainedValue()
+    else { return nil }
+    return CFUUIDCreateString(nil, uuid) as String?
+}
+
+/// Window IDs on every Space (of every display, or only of `onlyDisplay`), or nil if the private API is unavailable.
+private func allSpacesWindowIDs(onlyDisplay: String? = nil) -> [CGWindowID]? {
     guard let api = cgsAPI else { return nil }
     let cid = api.conn()
     guard let displays = api.spaces(cid)?.takeRetainedValue() as? [[String: Any]] else { return nil }
-    var spaceIDs: [Int] = []
-    for display in displays {
-        for space in (display["Spaces"] as? [[String: Any]] ?? []) {
-            if let id = space["id64"] as? Int { spaceIDs.append(id) }
-        }
-    }
+    let primary = NSScreen.screens.first.flatMap(displayUUIDString(for:))
+    let spaceIDs = spaceIDs(in: displays, onlyDisplay: onlyDisplay, primaryUUID: primary)
     guard !spaceIDs.isEmpty else { return nil }
     var setTags: UInt64 = 0, clearTags: UInt64 = 0
     guard let ids = api.windows(cid, 0, spaceIDs as CFArray, 2, &setTags, &clearTags)?
@@ -376,11 +398,12 @@ public class WindowManager: ObservableObject {
         }
 
         // 3. Windows on other Spaces / in hidden apps (invisible to AX and to .optionOnScreenOnly).
-        // Skipped when the "current screen only" filter is on: their screen is not known.
-        if !showOnlyCurrentScreenWindows {
-            let minimizedWIDs = Set(minimizedItems.compactMap { $0.windowID })
-            items.append(contentsOf: otherSpaceWindows(excluding: seenWIDs.union(minimizedWIDs), myPID: myPID))
-        }
+        // With the "current display only" filter on we still list the other Spaces of THAT display
+        // (a full-screen app lives in its own Space), just not the Spaces of the other displays.
+        let minimizedWIDs = Set(minimizedItems.compactMap { $0.windowID })
+        let displayFilter = showOnlyCurrentScreenWindows ? displayUUIDString(for: activeScreen) : nil
+        items.append(contentsOf: otherSpaceWindows(excluding: seenWIDs.union(minimizedWIDs), myPID: myPID,
+                                                   onlyDisplay: displayFilter))
 
         // 4. True Screen Z-Order (Frontmost to Backmost)
         // CGWindowListCopyWindowInfo naturally maintains the exact real-time Z-order from WindowServer.
@@ -393,8 +416,8 @@ public class WindowManager: ObservableObject {
 
     /// Real, titled windows of regular apps that live on other Spaces or in hidden apps.
     /// Needs Screen Recording for window titles; untitled windows are dropped as helper/utility surfaces.
-    private func otherSpaceWindows(excluding known: Set<CGWindowID>, myPID: pid_t) -> [WindowItem] {
-        guard let ids = allSpacesWindowIDs(),
+    private func otherSpaceWindows(excluding known: Set<CGWindowID>, myPID: pid_t, onlyDisplay: String? = nil) -> [WindowItem] {
+        guard let ids = allSpacesWindowIDs(onlyDisplay: onlyDisplay),
               let all = CGWindowListCopyWindowInfo([.optionAll], kCGNullWindowID) as? [[String: Any]] else { return [] }
 
         var infoByID: [CGWindowID: [String: Any]] = [:]
