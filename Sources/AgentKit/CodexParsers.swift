@@ -36,6 +36,20 @@ public struct CodexRolloutAccumulator: Sendable {
         consume(json)
     }
 
+    /// Cùng hiệu ứng với `consume(line:)` nhưng không dựng cây JSON cho phần không dùng: dòng `response_item`
+    /// (nội dung hội thoại, đầu ra lệnh… chiếm phần lớn rollout) chỉ lấy `timestamp`, `event_msg` không thuộc
+    /// các loại được xử lý bị bỏ qua. Sai khác với `consume(line:)` bị chặn bởi `FastParserEquivalenceTests`.
+    public mutating func consume(lineBytes line: UnsafeRawBufferPointer) {
+        guard let base = line.baseAddress, !line.isEmpty else { return }
+        let data = Data(bytesNoCopy: UnsafeMutableRawPointer(mutating: base), count: line.count, deallocator: .none)
+        guard let probe = try? JSONDecoder().decode(CodexLineProbe.self, from: data) else { return }
+        var json: [String: JSONValue] = [:]
+        if let ts = probe.timestamp { json["timestamp"] = .string(ts) }
+        if let type = probe.type { json["type"] = .string(type) }
+        if let payload = probe.payload { json["payload"] = payload }
+        consume(.object(json))
+    }
+
     public mutating func consume(_ json: JSONValue) {
         let ts = ISODate.parse(json["timestamp"]?.string)
         if let ts { lastActivity = max(lastActivity ?? ts, ts) }
@@ -106,6 +120,11 @@ public struct CodexRolloutAccumulator: Sendable {
         }
     }
 
+    /// Loại `event_msg` mà `consumeEvent` có xử lý; loại khác không ảnh hưởng trạng thái.
+    static let handledEventTypes: Set<String> = [
+        "task_started", "task_complete", "turn_aborted", "user_message", "agent_message", "token_count",
+    ]
+
     public mutating func drainRecords() -> [UsageRecord] {
         defer { pendingRecords.removeAll() }
         return pendingRecords
@@ -119,30 +138,59 @@ public struct IncrementalLineReader: Sendable {
 
     public init() {}
 
-    /// Trả về các dòng hoàn chỉnh mới kể từ lần đọc trước. File bị cắt ngắn (ghi đè) → đọc lại từ đầu.
-    public mutating func readNewLines(at url: URL, maxBytes: Int = 64 * 1024 * 1024) -> [String] {
-        guard let handle = try? FileHandle(forReadingFrom: url) else { return [] }
+    /// Đọc phần mới theo từng khối `chunkBytes` và gọi `body` cho mỗi dòng hoàn chỉnh (không rỗng) kể từ lần đọc trước,
+    /// KHÔNG gom toàn bộ dòng vào mảng: bộ nhớ chỉ cỡ một khối (cộng dòng dở dang / dòng dài nhất).
+    /// `body` nhận byte của dòng (không gồm `\n`), chỉ hợp lệ trong lúc gọi. Dừng sau `maxBytes` byte (phần còn lại để
+    /// lần quét sau). File bị cắt ngắn (ghi đè) → đọc lại từ đầu.
+    public mutating func forEachNewLine(at url: URL, chunkBytes: Int = 4 * 1024 * 1024, maxBytes: Int = .max,
+                                        _ body: (UnsafeRawBufferPointer) -> Void) {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return }
         defer { try? handle.close() }
         let size = (try? handle.seekToEnd()) ?? 0
         if size < offset {
             offset = 0
             remainder.removeAll()
         }
-        guard size > offset else { return [] }
+        guard size > offset else { return }
         try? handle.seek(toOffset: offset)
-        let toRead = Int(min(UInt64(maxBytes), size - offset))
-        guard let data = try? handle.read(upToCount: toRead), !data.isEmpty else { return [] }
-        offset += UInt64(data.count)
-
-        var chunk = remainder
-        chunk.append(data)
-        var lines: [String] = []
-        var start = chunk.startIndex
-        while let nl = chunk[start...].firstIndex(of: 0x0A) {
-            if nl > start { lines.append(String(decoding: chunk[start..<nl], as: UTF8.self)) }
-            start = chunk.index(after: nl)
+        var left = Int(min(UInt64(maxBytes), size - offset))
+        while left > 0 {
+            var finished = false
+            autoreleasepool {
+                guard let data = try? handle.read(upToCount: min(chunkBytes, left)), !data.isEmpty else { finished = true; return }
+                left -= data.count
+                offset += UInt64(data.count)
+                if remainder.isEmpty {
+                    remainder = consumeLines(in: data, body)
+                } else {
+                    var chunk = remainder
+                    chunk.append(data)
+                    remainder = consumeLines(in: chunk, body)
+                }
+            }
+            if finished { break }
         }
-        remainder = Data(chunk[start...])
+    }
+
+    /// Gọi `body` cho từng dòng hoàn chỉnh trong `chunk`; trả về phần đuôi chưa có `\n`.
+    private func consumeLines(in chunk: Data, _ body: (UnsafeRawBufferPointer) -> Void) -> Data {
+        chunk.withUnsafeBytes { raw -> Data in
+            guard let base = raw.baseAddress else { return Data() }
+            var start = 0
+            while start < raw.count, let nl = memchr(base + start, 0x0A, raw.count - start) {
+                let end = base.distance(to: UnsafeRawPointer(nl))
+                if end > start { body(UnsafeRawBufferPointer(start: base + start, count: end - start)) }
+                start = end + 1
+            }
+            return start < raw.count ? Data(raw[start...]) : Data()
+        }
+    }
+
+    /// Trả về các dòng hoàn chỉnh mới kể từ lần đọc trước (tối đa `maxBytes` byte mỗi lần). Tiện cho test và phần
+    /// đọc nhỏ; quét lớn dùng `forEachNewLine` để không giữ cả mảng chuỗi trong bộ nhớ.
+    public mutating func readNewLines(at url: URL, maxBytes: Int = 64 * 1024 * 1024) -> [String] {
+        var lines: [String] = []
+        forEachNewLine(at: url, maxBytes: maxBytes) { lines.append(String(decoding: $0, as: UTF8.self)) }
         return lines
     }
 }
