@@ -118,6 +118,19 @@ struct ModernHeaderBar: View {
             .padding(.vertical, 3)
             .background(Capsule().fill(Color.primary.opacity(0.06)))
 
+            // Task Manager Button
+            Button {
+                TaskManagerWindowController.shared.show()
+            } label: {
+                Image(systemName: "gauge.with.dots.needle.67percent")
+                    .font(.system(size: FS.label, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(5)
+                    .background(Circle().fill(Color.primary.opacity(0.05)))
+            }
+            .buttonStyle(.plain)
+            .help(tr("Mở Trình quản lý tác vụ", "Open Task Manager") + " · " + ShortcutManager.shared.primaryTitle(.taskManager))
+
             // Quit Button
             Button {
                 NSApplication.shared.terminate(nil)

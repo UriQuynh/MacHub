@@ -40,7 +40,7 @@ struct ShortcutBinding: Codable, Equatable, Hashable {
 }
 
 enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
-    case screenshot, clipboard, switchWindows
+    case screenshot, clipboard, switchWindows, taskManager
     case leftHalf, rightHalf, topHalf, bottomHalf, maximize, center, restoreWindow
     case topLeft, topRight, bottomLeft, bottomRight
     case nextDisplay, previousDisplay, restorePrimaryDisplay, menuBar
@@ -50,6 +50,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .screenshot: return tr("Chụp màn hình", "Screenshot")
         case .clipboard: return tr("Mở Clipboard", "Open Clipboard")
         case .switchWindows: return tr("Chuyển cửa sổ", "Switch windows")
+        case .taskManager: return tr("Trình quản lý tác vụ", "Task Manager")
         case .leftHalf: return tr("Nửa trái", "Left half")
         case .rightHalf: return tr("Nửa phải", "Right half")
         case .topHalf: return tr("Nửa trên", "Top half")
@@ -89,6 +90,7 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         case .previousDisplay: return [123,125].flatMap { [ShortcutBinding($0, oc), .init($0, oc.union(.maskControl))] }
         case .restorePrimaryDisplay: return [.init(18, [.maskControl, .maskAlternate, .maskCommand])] // ⌃⌥⌘1
         case .menuBar: return [.init(11, oc)]
+        case .taskManager: return [.init(53, [.maskControl, .maskShift])] // ⌃⇧Esc, giống Ctrl+Shift+Esc của Windows
         }
     }
     var snapAction: SnapAction? {
@@ -303,6 +305,7 @@ final class ShortcutManager: ObservableObject {
         case .previousDisplay: WindowSnapManager.shared.moveActiveWindowToDisplay(isNext: false)
         case .restorePrimaryDisplay: DisplayManager.shared.restorePrimaryDisplay()
         case .menuBar: MenuBarHiderManager.shared.toggle()
+        case .taskManager: TaskManagerWindowController.shared.toggle()
         default: break
         }
     }

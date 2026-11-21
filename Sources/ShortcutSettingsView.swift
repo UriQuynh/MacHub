@@ -45,7 +45,7 @@ final class ShortcutSettingsWindow: NSObject, NSWindowDelegate {
 struct ShortcutSettingsView: View {
     @ObservedObject var manager: ShortcutManager
     private let groups: [(String, [ShortcutAction])] = [
-        (tr("Mở chức năng", "Open features"), [.screenshot, .clipboard, .switchWindows, .menuBar]),
+        (tr("Mở chức năng", "Open features"), [.screenshot, .clipboard, .switchWindows, .menuBar, .taskManager]),
         (tr("Chia cửa sổ", "Arrange windows"), [.leftHalf, .rightHalf, .topHalf, .bottomHalf, .maximize, .center, .restoreWindow, .topLeft, .topRight, .bottomLeft, .bottomRight]),
         (tr("Màn hình", "Displays"), [.restorePrimaryDisplay, .nextDisplay, .previousDisplay])
     ]

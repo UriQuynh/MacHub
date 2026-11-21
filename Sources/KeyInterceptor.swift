@@ -612,6 +612,7 @@ func configuredShortcutMatch(_ key: UInt16, flags: CGEventFlags) -> ShortcutMatc
     case .clipboard: enabled = gIsClipboardEnabled
     case .switchWindows: enabled = gIsAltTabEnabled
     case .menuBar: enabled = gIsMenuBarHiderEnabled
+    case .taskManager: enabled = true
     default: enabled = gIsWindowSnapEnabled
     }
     return enabled ? match : nil

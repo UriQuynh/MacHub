@@ -53,6 +53,7 @@ swift test                    # unit test (Tests/ScreenshotAnnotationTests)
 | `Sources/PrivilegedHelper.swift`, `Resources/machub-power`, `Resources/install-helper.sh` | Helper root qua sudoers giới hạn |
 | `Sources/DisplayManager.swift`, `VirtualDisplayManager.swift`, `VirtualDisplayBridge/` | Độ sáng, DDC, màn hình ảo |
 | `Sources/SystemCleanerManager.swift`, `CleanerTabView.swift` | Dọn rác, gỡ app |
+| `Sources/TaskManager/` | Trình quản lý tác vụ (⌃⇧Esc): `ProcessSampler` (libproc), `ProcessGrouping`, `SystemSampler`, `TaskManagerModel`, `TaskManagerView`, `TaskManagerWindow`. Chỉ lấy mẫu khi cửa sổ mở. Dòng của danh sách là `Button` (không dùng `onTapGesture`: không nhận click giả lập/trợ năng). Test: `Tests/MacHubTests/TaskManagerTests.swift` |
 | `Sources/ScreenshotManager.swift`, `ScreenshotOverlayView.swift`, `ScreenshotAnnotationRenderer.swift` | Chụp & chú thích |
 | `Sources/UpdateManager.swift` | Sparkle |
 | `Sources/AgentKit/` | Thư viện thuần Foundation: đọc transcript Claude Code / rollout Codex, hạn mức (statusLine, OAuth), bảng giá, tổng hợp token, socket Unix, cài hook vào `~/.claude/settings.json` |
