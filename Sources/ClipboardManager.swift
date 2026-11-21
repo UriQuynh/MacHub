@@ -928,8 +928,8 @@ public class ClipboardManager: ObservableObject {
             let mouseLoc = NSEvent.mouseLocation
             let screen = NSScreen.screens.first(where: { NSPointInRect(mouseLoc, $0.frame) }) ?? NSScreen.main ?? NSScreen.screens[0]
 
-            let panelWidth: CGFloat = 430
-            let panelHeight: CGFloat = 520
+            let panelWidth: CGFloat = 480
+            let panelHeight: CGFloat = 560
 
             // Center horizontally on screen, slightly above center vertically
             let x = screen.visibleFrame.midX - (panelWidth / 2)
@@ -950,7 +950,7 @@ public class ClipboardManager: ObservableObject {
 
     private func createHUDPanel() {
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 430, height: 520),
+            contentRect: NSRect(x: 0, y: 0, width: 480, height: 560),
             styleMask: [.nonactivatingPanel, .titled, .fullSizeContentView],
             backing: .buffered,
             defer: false
