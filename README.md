@@ -337,6 +337,7 @@ Chi tiết và các lỗi đã gặp: `AGENTS.md` mục 3 và Phụ lục A7.
 ## 📝 Nhật ký thay đổi
 
 ### [Chưa phát hành]
+- Alt-Tab/⌘Tab khi bật "Chỉ hiện cửa sổ trên màn hình hiện tại" vẫn liệt kê cửa sổ ở các Space khác (kể cả app full-screen) của màn hình đó; trước đây chỉ còn cửa sổ ở Space đang xem. Muốn thấy cửa sổ của mọi màn hình thì tắt công tắc này trong tab Phím tắt.
 - Thêm **Trình quản lý tác vụ** (⌃⇧Esc): danh sách tiến trình gom theo ứng dụng, đồ thị hiệu năng CPU/RAM/đĩa/mạng/GPU, kết thúc / buộc dừng / tạm dừng tiến trình, đổi độ ưu tiên.
 
 ### [0.1.2] — 2026-11-20 ([tải về](https://github.com/UriQuynh/MacHub/releases/tag/v0.1.2))
