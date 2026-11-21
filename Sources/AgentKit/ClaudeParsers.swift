@@ -40,6 +40,53 @@ public enum ClaudeTranscript {
                            cacheWrite5mTokens: cache5m, cacheWrite1hTokens: cache1h, cacheReadTokens: cacheRead)
     }
 
+    // MARK: Đường nhanh (quét hàng loạt)
+
+    /// Kết quả của `scan(line:)`: bản ghi token và khóa khử trùng lặp của đúng dòng đó.
+    public struct ScannedLine: Equatable, Sendable {
+        public var record: UsageRecord
+        public var dedupeKey: String?
+    }
+
+    /// Cùng kết quả với `JSONValue.parse(line)` → `usageRecord(from:)` + `dedupeKey(_:)`, nhưng KHÔNG dựng cây `JSONValue`:
+    /// chỉ giải mã vài trường cần dùng (nội dung hội thoại, tool_use, tool_result… bị bỏ qua ngay trong bộ quét)
+    /// và lọc nhanh dòng không chứa `"usage"` bằng so khớp byte. Đây là đường nóng khi quét hàng GB transcript.
+    /// Mọi sai khác với đường chậm bị chặn bởi `FastParserEquivalenceTests`.
+    public static func scan(line: UnsafeRawBufferPointer) -> ScannedLine? {
+        guard LineBytes.contains(line, needle: usageNeedle), let base = line.baseAddress else { return nil }
+        let data = Data(bytesNoCopy: UnsafeMutableRawPointer(mutating: base), count: line.count, deallocator: .none)
+        guard let probe = try? JSONDecoder().decode(LineProbe.self, from: data),
+              probe.type == "assistant", let message = probe.message, let usage = message.usage else { return nil }
+        let model = message.model ?? "unknown"
+        if model == "<synthetic>" { return nil }
+        guard let ts = ISODate.parse(probe.timestamp) else { return nil }
+
+        let input = LineBytes.tokenCount(usage.input)
+        let output = LineBytes.tokenCount(usage.output)
+        let cacheRead = LineBytes.tokenCount(usage.cacheRead)
+        var cache5m = LineBytes.tokenCount(usage.cacheCreation)
+        var cache1h = 0
+        if let detail = usage.detail, detail.five != nil || detail.hour != nil {
+            cache5m = LineBytes.tokenCount(detail.five)
+            cache1h = LineBytes.tokenCount(detail.hour)
+        }
+        if input + output + cacheRead + cache5m + cache1h == 0 { return nil }
+
+        let record = UsageRecord(provider: .claude, timestamp: ts, model: model,
+                                 project: probe.cwd, sessionID: probe.sessionId,
+                                 inputTokens: input, outputTokens: output,
+                                 cacheWrite5mTokens: cache5m, cacheWrite1hTokens: cache1h, cacheReadTokens: cacheRead)
+        let key = message.id.map { "\($0):\(probe.requestId ?? "")" }
+        return ScannedLine(record: record, dedupeKey: key)
+    }
+
+    public static func scan(line: String) -> ScannedLine? {
+        var line = line
+        return line.withUTF8 { scan(line: UnsafeRawBufferPointer($0)) }
+    }
+
+    private static let usageNeedle = Array("\"usage\"".utf8)
+
     /// Model của phản hồi assistant gần nhất trong một đoạn cuối transcript.
     public static func lastModel(inTail text: String) -> String? {
         for raw in text.split(separator: "\n").reversed() {
