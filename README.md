@@ -51,7 +51,14 @@ Get-FileHash .\MacHub-Windows-Setup.exe             # Windows (PowerShell)
 1. Mở `MacHub.dmg`, kéo `MacHub.app` vào **Applications** (hoặc giải nén `MacHub.zip`).
 2. MacHub ký bằng chứng chỉ tự ký (chưa notarize), nên lần đầu macOS sẽ chặn. Mở
    **System Settings → Privacy & Security**, bấm **Open Anyway** ở mục MacHub. Không cần dùng `xattr -cr`.
-3. Mở MacHub, bấm vào thẻ **Cấp quyền phần mềm** ở tab Màn hình để cấp Trợ năng, Ghi màn hình, Bluetooth khi cần.
+3. Mở MacHub, bấm vào thẻ **Cấp quyền phần mềm** ở tab Màn hình để cấp quyền. **Bắt buộc cấp cả 2 quyền** để Alt-Tab và phím tắt chạy đủ:
+
+   | Quyền | Dùng để | Thiếu thì |
+   |---|---|---|
+   | **Trợ năng** (Accessibility) | Bắt phím tắt toàn cục, điều khiển / đóng / đưa cửa sổ lên trước | Phím tắt và Alt-Tab không hoạt động |
+   | **Ghi màn hình** (Screen Recording) | Đọc tiêu đề và ảnh xem trước của cửa sổ trong Alt-Tab, kể cả cửa sổ ở Space khác | Alt-Tab thiếu cửa sổ hoặc không có tiêu đề / ảnh xem trước |
+
+   Sau khi cấp **Ghi màn hình**, hãy **thoát và mở lại MacHub** để quyền có hiệu lực. Bluetooth chỉ cần khi dùng tính năng liên quan.
 
 Sau lần đầu, các bản mới tự đến qua **Sparkle** (có kiểm chữ ký), không cần tải lại.
 
@@ -240,6 +247,14 @@ Tích hợp trực tiếp tại tab **Dọn dẹp** trên thanh điều khiển 
 > Đây là di chứng của kiểu ký **ad-hoc**: mỗi bản build có "danh tính" (cdhash) khác nhau nên macOS coi là app mới và vô hiệu hoá quyền cũ.
 >
 > MacHub luôn được ký bằng **chứng chỉ cố định** `MacHub Self-Signed` và tự khôi phục quyền Trợ năng sau mỗi lần cập nhật.
+</details>
+
+<details>
+<summary><b>6. Alt-Tab không hiện hoặc thiếu cửa sổ?</b></summary>
+
+> Kiểm tra **System Settings → Privacy & Security** xem MacHub đã bật cả **Trợ năng** lẫn **Ghi màn hình** chưa. Thiếu Trợ năng thì phím tắt không chạy; thiếu Ghi màn hình thì Alt-Tab không thấy đủ cửa sổ (nhất là cửa sổ ở Space khác hoặc Stage Manager).
+>
+> Sau khi cấp **Ghi màn hình**, hãy thoát và mở lại MacHub. Nếu đang chạy app Alt-Tab khác (ví dụ AltTab), hãy tắt đi để hai app không tranh phím tắt.
 </details>
 
 ---
