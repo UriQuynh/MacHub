@@ -338,6 +338,7 @@ Chi tiết và các lỗi đã gặp: `AGENTS.md` mục 3 và Phụ lục A7.
 ## 📝 Nhật ký thay đổi
 
 ### [Chưa phát hành]
+- Sửa lỗi MacHub treo cứng, không mở được app: thông báo đổi trạng thái nhiệt của hệ thống đến từ luồng nền nhưng được xử lý ngay trên luồng đó nên tranh khoá với luồng chính. Giờ việc này được chuyển về luồng chính và gộp các thông báo dồn dập.
 - Clipboard HUD dễ đọc hơn: nền gần đặc theo sáng/tối nên chữ luôn tương phản, dòng đang chọn nổi bật, chữ lớn hơn, hàng phím tắt không bị bẻ chữ, 6 bộ lọc nằm gọn một hàng.
 - Quét log Agent lúc khởi động nhẹ hơn khoảng 20 lần CPU (RSS ~660 MB → ~60 MB).
 

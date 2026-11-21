@@ -342,6 +342,9 @@ public class ThermalManager: ObservableObject {
     private let hidReader = AppleSiliconHIDReader()
     private let smcReader = SMCTempReader()
     private var pollTimer: Timer?
+    /// Số lần đã đọc lại cảm biến vì hệ thống báo đổi trạng thái nhiệt (dùng để kiểm thử việc gộp thông báo).
+    public private(set) var thermalStateRefreshCount = 0
+    private var isThermalRefreshScheduled = false
     private var pollInterval: TimeInterval = 0
     private var isPopoverVisible: Bool = false
     private var needsFanThermalMonitor: Bool = false
@@ -576,8 +579,28 @@ public class ThermalManager: ObservableObject {
         updateMenuBarDisplay()
     }
 
-    @objc private func thermalStateChanged() {
-        refreshMetrics()
+    /// `ProcessInfo.thermalStateDidChangeNotification` được hệ thống post từ LUỒNG NỀN bất kỳ. Class này là
+    /// `@MainActor` nên không được đụng vào trạng thái (`@Published`, SMC/HID reader) ở đây: bản cũ gọi thẳng
+    /// `refreshMetrics()` tại chỗ nên nhiều luồng nền ghi `@Published` đồng thời với luồng chính, kẹt khoá của
+    /// Combine và làm MacHub treo cứng (không mở được app). Chỉ chuyển việc về luồng chính.
+    @objc nonisolated private func thermalStateChanged() {
+        DispatchQueue.main.async { [weak self] in
+            MainActor.assumeIsolated { self?.scheduleThermalRefresh() }
+        }
+    }
+
+    /// Gộp các thông báo dồn dập thành một lần đọc cảm biến (đọc SMC/HID khá nặng).
+    private func scheduleThermalRefresh() {
+        guard !isThermalRefreshScheduled else { return }
+        isThermalRefreshScheduled = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.isThermalRefreshScheduled = false
+                self.thermalStateRefreshCount += 1
+                self.refreshMetrics()
+            }
+        }
     }
 
     /// Chuỗi nhiệt độ hiển thị trên Menu Bar (`nil` nếu tắt hoặc chưa có số liệu).
