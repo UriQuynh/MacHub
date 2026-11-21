@@ -86,39 +86,52 @@ final class FastParserEquivalenceTests: XCTestCase {
 
     func testClaudeRandomizedLinesMatchSlowPath() {
         var rng = SplitMix64(seed: 0xC1A0DE)
-        func pick<T>(_ xs: [T]) -> T { xs[Int(rng.next() % UInt64(xs.count))] }
-        let numbers = ["0", "1", "17", "12.9", "-3", "\"42\"", "\"x\"", "null", "true", "[]", "{}", "1e3", "250000"]
-        let strings = ["\"abc\"", "\"\"", "null", "5", "true", "{}", "\"<synthetic>\"", "\"claude-opus-5-5\""]
-        let stamps = ["\"2026-11-18T10:00:00.5Z\"", "\"2026-11-18T10:00:00Z\"", "\"bad\"", "null", "12"]
+        let numbers: [String] = ["0", "1", "17", "12.9", "-3", "\"42\"", "\"x\"", "null", "true", "[]", "{}", "1e3", "250000"]
+        let strings: [String] = ["\"abc\"", "\"\"", "null", "5", "true", "{}", "\"<synthetic>\"", "\"claude-opus-5-5\""]
+        let stamps: [String] = ["\"2026-11-18T10:00:00.5Z\"", "\"2026-11-18T10:00:00Z\"", "\"bad\"", "null", "12"]
+        let types: [String] = ["\"assistant\"", "\"assistant\"", "\"assistant\"", "\"user\"", "1", "null"]
+        let usageKeys: [String] = ["input_tokens", "output_tokens", "cache_read_input_tokens", "cache_creation_input_tokens"]
+        let nonObjectUsage: [String] = ["null", "[]", "3"]
+        let nonObjectDetail: [String] = ["null", "[1]", "5"]
+        let nonObjectMessage: [String] = ["\"s\"", "null"]
+
         for _ in 0..<3_000 {
             var usage: [String] = []
-            for (k, opts) in [("input_tokens", numbers), ("output_tokens", numbers), ("cache_read_input_tokens", numbers),
-                              ("cache_creation_input_tokens", numbers)] where rng.next() % 4 != 0 {
-                usage.append("\"\(k)\":\(pick(opts))")
+            for key in usageKeys where rng.next() % 4 != 0 {
+                usage.append("\"\(key)\":\(rng.pick(numbers))")
             }
             if rng.next() % 3 == 0 {
-                var d: [String] = []
-                if rng.next() % 2 == 0 { d.append("\"ephemeral_5m_input_tokens\":\(pick(numbers))") }
-                if rng.next() % 2 == 0 { d.append("\"ephemeral_1h_input_tokens\":\(pick(numbers))") }
-                usage.append("\"cache_creation\":" + pick(["{" + d.joined(separator: ",") + "}", "null", "[1]", "5"]))
+                var detail: [String] = []
+                if rng.next() % 2 == 0 { detail.append("\"ephemeral_5m_input_tokens\":\(rng.pick(numbers))") }
+                if rng.next() % 2 == 0 { detail.append("\"ephemeral_1h_input_tokens\":\(rng.pick(numbers))") }
+                let detailJSON: String = rng.next() % 2 == 0 ? Self.object(detail) : rng.pick(nonObjectDetail)
+                usage.append("\"cache_creation\":" + detailJSON)
             }
-            let usageJSON = pick(["{" + usage.joined(separator: ",") + "}", "{" + usage.joined(separator: ",") + "}",
-                                  "{" + usage.joined(separator: ",") + "}", "null", "[]", "3"])
+            let usageJSON: String = rng.next() % 4 != 0 ? Self.object(usage) : rng.pick(nonObjectUsage)
+
             var msg: [String] = []
-            if rng.next() % 5 != 0 { msg.append("\"id\":\(pick(strings))") }
-            if rng.next() % 5 != 0 { msg.append("\"model\":\(pick(strings))") }
+            if rng.next() % 5 != 0 { msg.append("\"id\":\(rng.pick(strings))") }
+            if rng.next() % 5 != 0 { msg.append("\"model\":\(rng.pick(strings))") }
             msg.append("\"content\":[{\"type\":\"text\",\"text\":\"…\"}]")
-            msg.append("\"usage\":\(usageJSON)")
+            msg.append("\"usage\":" + usageJSON)
+
             var top: [String] = []
-            top.append("\"type\":" + pick(["\"assistant\"", "\"assistant\"", "\"assistant\"", "\"user\"", "1", "null"]))
-            if rng.next() % 6 != 0 { top.append("\"timestamp\":\(pick(stamps))") }
-            if rng.next() % 2 == 0 { top.append("\"cwd\":\(pick(strings))") }
-            if rng.next() % 2 == 0 { top.append("\"sessionId\":\(pick(strings))") }
-            if rng.next() % 2 == 0 { top.append("\"requestId\":\(pick(strings))") }
-            top.append("\"message\":" + pick(["{" + msg.joined(separator: ",") + "}", "{" + msg.joined(separator: ",") + "}", "\"s\"", "null"]))
-            let line = "{" + top.shuffled(using: &rng).joined(separator: ",") + "}"
-            assertSameClaude(line)
+            top.append("\"type\":" + rng.pick(types))
+            if rng.next() % 6 != 0 { top.append("\"timestamp\":" + rng.pick(stamps)) }
+            if rng.next() % 2 == 0 { top.append("\"cwd\":" + rng.pick(strings)) }
+            if rng.next() % 2 == 0 { top.append("\"sessionId\":" + rng.pick(strings)) }
+            if rng.next() % 2 == 0 { top.append("\"requestId\":" + rng.pick(strings)) }
+            let messageJSON: String = rng.next() % 4 != 0 ? Self.object(msg) : rng.pick(nonObjectMessage)
+            top.append("\"message\":" + messageJSON)
+            top.shuffle(using: &rng)
+            assertSameClaude(Self.object(top))
         }
+    }
+
+    /// `{a,b,c}` từ các cặp `"khóa":giá trị` đã dựng sẵn.
+    private static func object(_ members: [String]) -> String {
+        let body: String = members.joined(separator: ",")
+        return "{" + body + "}"
     }
 
     // MARK: Codex
@@ -158,10 +171,25 @@ final class FastParserEquivalenceTests: XCTestCase {
     ]
 
     private func snapshot(_ a: CodexRolloutAccumulator) -> String {
-        let recs = a.pendingRecords.map { "\($0)" }.joined(separator: ";")
-        return [a.sessionID, a.cwd, a.branch, a.model, a.startedAt.map { "\($0.timeIntervalSince1970)" },
-                a.lastActivity.map { "\($0.timeIntervalSince1970)" }, a.state.rawValue, a.lastUserMessage, a.lastAgentMessage,
-                "\(a.totalTokens)", a.limits.map { "\($0)" }, recs].map { $0 ?? "nil" }.joined(separator: "|")
+        let recs: String = a.pendingRecords.map { "\($0)" }.joined(separator: ";")
+        let started: String? = a.startedAt.map { String($0.timeIntervalSince1970) }
+        let last: String? = a.lastActivity.map { String($0.timeIntervalSince1970) }
+        let limits: String? = a.limits.map { "\($0)" }
+        var parts: [String?] = []
+        parts.append(a.sessionID)
+        parts.append(a.cwd)
+        parts.append(a.branch)
+        parts.append(a.model)
+        parts.append(started)
+        parts.append(last)
+        parts.append(a.state.rawValue)
+        parts.append(a.lastUserMessage)
+        parts.append(a.lastAgentMessage)
+        parts.append(String(a.totalTokens))
+        parts.append(limits)
+        parts.append(recs)
+        let texts: [String] = parts.map { $0 ?? "nil" }
+        return texts.joined(separator: "|")
     }
 
     private func consumeBytes(_ acc: inout CodexRolloutAccumulator, _ line: String) {
@@ -291,6 +319,10 @@ final class FastParserEquivalenceTests: XCTestCase {
         XCTAssertEqual(collect(&r, url, chunk: 2), ["z"])
         XCTAssertEqual(collect(&r, URL(fileURLWithPath: "/nonexistent/x.jsonl"), chunk: 2), [])
     }
+}
+
+extension SplitMix64 {
+    mutating func pick(_ items: [String]) -> String { items[Int(next() % UInt64(items.count))] }
 }
 
 /// Bộ sinh số giả ngẫu nhiên có hạt giống cố định để test lặp lại được.
