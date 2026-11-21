@@ -337,6 +337,10 @@ Chi tiết và các lỗi đã gặp: `AGENTS.md` mục 3 và Phụ lục A7.
 
 ## 📝 Nhật ký thay đổi
 
+### [Chưa phát hành]
+- Clipboard HUD dễ đọc hơn: nền gần đặc theo sáng/tối nên chữ luôn tương phản, dòng đang chọn nổi bật, chữ lớn hơn, hàng phím tắt không bị bẻ chữ, 6 bộ lọc nằm gọn một hàng.
+- Quét log Agent lúc khởi động nhẹ hơn khoảng 20 lần CPU (RSS ~660 MB → ~60 MB).
+
 ### [0.1.3] — 2026-11-21 ([tải về](https://github.com/UriQuynh/MacHub/releases/tag/v0.1.3))
 - Alt-Tab/⌘Tab khi bật "Chỉ hiện cửa sổ trên màn hình hiện tại" vẫn liệt kê cửa sổ ở các Space khác (kể cả app full-screen) của màn hình đó; trước đây chỉ còn cửa sổ ở Space đang xem. Muốn thấy cửa sổ của mọi màn hình thì tắt công tắc này trong tab Phím tắt.
 - Thêm **Trình quản lý tác vụ** (⌃⇧Esc): danh sách tiến trình gom theo ứng dụng, đồ thị hiệu năng CPU/RAM/đĩa/mạng/GPU, kết thúc / buộc dừng / tạm dừng tiến trình, đổi độ ưu tiên.
