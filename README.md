@@ -206,6 +206,16 @@ Tích hợp trực tiếp tại tab **Dọn dẹp** trên thanh điều khiển 
 
 ---
 
+### 📊 10. Trình Quản Lý Tác Vụ (Giống Task Manager của Windows)
+
+Mở bằng **⌃⇧Esc** (đổi được trong tab Phím tắt) hoặc nút đồng hồ ở thanh trên cùng của MacHub. Cửa sổ chỉ lấy số liệu khi đang mở nên không tốn CPU lúc rảnh.
+
+- **Tiến trình**: gom theo ứng dụng (Chrome, VS Code... gồm cả tiến trình phụ), tách "Ứng dụng" và "Tiến trình nền"; cột CPU, Bộ nhớ, Đĩa, Năng lượng tô màu theo mức dùng; bấm tiêu đề cột để sắp xếp, ô tìm kiếm lọc theo tên, PID hoặc đường dẫn.
+- **Hiệu năng**: đồ thị 60 giây cho CPU (kèm từng nhân), Bộ nhớ (wired, nén, swap), Đĩa, Mạng, GPU.
+- **Chi tiết**: danh sách phẳng có PID, trạng thái, người dùng, số luồng, đường dẫn.
+- **Kết thúc tác vụ** (có hỏi xác nhận), **Buộc dừng**, **Tạm dừng / Tiếp tục**, đổi độ ưu tiên (nice), mở vị trí trong Finder, sao chép đường dẫn. Tiến trình hệ thống quan trọng (`launchd`, `WindowServer`, `loginwindow`...) và chính MacHub bị chặn; tiến trình của root hoặc người dùng khác cần quyền quản trị nên không dừng được từ đây.
+- Không cần cấp thêm quyền nào. Chưa có: Khởi động cùng máy, Dịch vụ, Lịch sử ứng dụng, dòng lệnh đầy đủ của tiến trình.
+
 ---
 
 ## ❓ CÂU HỎI THƯỜNG GẶP (FAQ)
@@ -325,6 +335,9 @@ Chi tiết và các lỗi đã gặp: `AGENTS.md` mục 3 và Phụ lục A7.
 ---
 
 ## 📝 Nhật ký thay đổi
+
+### [Chưa phát hành]
+- Thêm **Trình quản lý tác vụ** (⌃⇧Esc): danh sách tiến trình gom theo ứng dụng, đồ thị hiệu năng CPU/RAM/đĩa/mạng/GPU, kết thúc / buộc dừng / tạm dừng tiến trình, đổi độ ưu tiên.
 
 ### [0.1.2] — 2026-11-20 ([tải về](https://github.com/UriQuynh/MacHub/releases/tag/v0.1.2))
 - Hết hỏi mật khẩu Keychain liên tục khi bật đọc hạn mức Claude: token Claude Code được đọc qua `/usr/bin/security`, cache trong bộ nhớ đến khi hết hạn, chặn gọi chồng; từ chối thì nghỉ 6 giờ.

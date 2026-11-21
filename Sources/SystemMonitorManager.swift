@@ -275,7 +275,7 @@ public final class SystemMonitorManager: ObservableObject {
         return min(max((Double(usedBytes.partialValue) / Double(totalBytes)) * 100.0, 0.0), 100.0)
     }
 
-    private static func readGPUUtilization() -> Double? {
+    nonisolated static func readGPUUtilization() -> Double? {
         var iterator: io_iterator_t = 0
         guard IOServiceGetMatchingServices(
             kIOMainPortDefault,

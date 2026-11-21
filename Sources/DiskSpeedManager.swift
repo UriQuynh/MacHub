@@ -145,7 +145,7 @@ final class DiskSpeedSampler {
 
     // MARK: - Disk counters (IOKit)
 
-    private static func readDiskCounters() -> ([String: (r: UInt64, w: UInt64)], [String: String]) {
+    static func readDiskCounters() -> ([String: (r: UInt64, w: UInt64)], [String: String]) {
         var counters: [String: (r: UInt64, w: UInt64)] = [:]
         var names = volumeNamesByPhysicalDisk()
 
@@ -376,13 +376,13 @@ final class DiskSpeedSampler {
         return nil
     }
 
-    private static func isPhysicalInterface(_ name: String) -> Bool {
+    static func isPhysicalInterface(_ name: String) -> Bool {
         guard name.hasPrefix("en") || name.hasPrefix("ppp") else { return false }
         return true
     }
 
     /// Bộ đếm byte của từng interface qua sysctl NET_RT_IFLIST2 (số 64-bit).
-    private static func readInterfaceCounters() -> [String: (r: UInt64, w: UInt64)] {
+    static func readInterfaceCounters() -> [String: (r: UInt64, w: UInt64)] {
         var mib: [Int32] = [CTL_NET, PF_ROUTE, 0, 0, NET_RT_IFLIST2, 0]
         var length = 0
         guard sysctl(&mib, u_int(mib.count), nil, &length, nil, 0) == 0, length > 0 else { return [:] }
