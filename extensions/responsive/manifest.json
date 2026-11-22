@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "MacHub Responsive",
   "short_name": "MH Responsive",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Xem trang web ở nhiều kích thước mobile, tablet, desktop cùng lúc — không cần mở DevTools (F12).",
   "minimum_chrome_version": "116",
   "icons": {
