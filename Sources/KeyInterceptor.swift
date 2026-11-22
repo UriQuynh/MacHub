@@ -689,6 +689,7 @@ public class KeyInterceptor {
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
         CGEvent.tapEnable(tap: validTap, enable: true)
         appLog("✅ KeyInterceptor: Active on Session level (Safe, no deadlocks).")
+        NativeCommandTab.refresh()
     }
 
     public func stop() {
@@ -700,6 +701,7 @@ public class KeyInterceptor {
             self.eventTap = nil
             self.runLoopSource = nil
             gCurrentTap = nil
+            NativeCommandTab.restore()
             appLog("⏹ KeyInterceptor stopped.")
         }
     }

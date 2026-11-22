@@ -47,6 +47,7 @@ swift test                    # unit test (Tests/ScreenshotAnnotationTests)
 | `Sources/WindowManager.swift`, `AltTabOverlayView.swift` | AltTab (sẽ thay bằng lõi alt-tab-macos ở P1.5) |
 | `Sources/WindowSnapManager.swift`, `WindowFrameHistory.swift` | Chia cửa sổ, khôi phục khung |
 | `Sources/KeyInterceptor.swift` | CGEventTap toàn cục cho phím tắt |
+| `Sources/NativeCommandTab.swift` | Tắt ⌘Tab/⌘⇧Tab gốc của macOS (`CGSSetSymbolicHotKeyEnabled`) khi MacHub dùng ⌘Tab; bật lại khi dừng/thoát/SIGTERM. Event tap không chặn được ⌘Tab vì WindowServer xử lý trước |
 | `Sources/ClipboardManager.swift`, `ClipboardOverlayView.swift` | Lịch sử clipboard (lưu mã hóa) |
 | `Sources/SecureStore.swift` | AES-256-GCM, khóa trong Keychain; dùng cho mọi dữ liệu nhạy cảm lưu đĩa |
 | `Sources/BatteryManager.swift`, `FanManager.swift`, `ThermalManager.swift` | Khóa sạc, quạt, nhiệt độ |
