@@ -105,6 +105,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        NativeCommandTab.restore()
         MenuBarHiderManager.shared.removeStatusItem()
         VirtualDisplayManager.shared.destroyVirtualDisplay()
         FanManager.shared.restoreSystemSync()

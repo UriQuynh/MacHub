@@ -209,6 +209,7 @@ public class WindowManager: ObservableObject {
         didSet {
             UserDefaults.standard.set(isAltTabEnabled, forKey: "alttab_enabled")
             gIsAltTabEnabled = isAltTabEnabled
+            NativeCommandTab.refresh()
         }
     }
     @Published public var isDetailsExpanded: Bool = false {
